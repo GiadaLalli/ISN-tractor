@@ -95,7 +95,7 @@ For more examples, please refer to the _Documentation_.
 Contributions are what make the open source community such a wonderful place to learn, be inspired, and create. 
 Your contributions will be greatly appreciated.
 
-If you have an idea for how to improve this, please fork the repository and submit a pull request. You can alternatively open a new issue with the tag "improvement". Don't forget to star the project! Thank you once more!
+If you have an idea for how to improve this, please fork the repository and submit a pull request. You can alternatively open a new issue with the tag "improvement". Don't forget to :star: the project! Thank you once more!
 
 1. Fork the Project
 2. Create your Feature Branch `(git checkout -b feature/AmazingFeature)`
