@@ -108,6 +108,8 @@ If you have an idea for how to improve this, please fork the repository and subm
 ## Contact
 Giada Lalli - giada.lalli@kuleuven.be
 
+Zuqi Li - zuqi.li@kuleuven.be
+
 Project Link: 
 
 ## Acknowledgments
