@@ -3,8 +3,6 @@
 
 # # Import Libraries
 
-# In[1]:
-
 import pandas as pd
 import numpy as np
 import sys
@@ -17,8 +15,8 @@ import torch as t
 import pickle
 import marshal
 
-
 # # Data Upload
+
 # snp dset
 df = pd.read_csv(filename)
 
@@ -31,13 +29,9 @@ interact = pd.read_csv(filename)
 #list of genes in the human genome with chr:start-stop
 gtf = pd.read_csv(filename)
 
-
 # # Functions
 
 # ## Preprocessing
-
-# In[ ]:
-
 
 def preprocess_gtf(gtf):
 
@@ -65,7 +59,6 @@ def preprocess_gtf(gtf):
 
     return(gene_info)
 
-
 def preprocess_snp(snp_info):
     snp_info = snp_info.set_index('name')
     snp_info = snp_info[snp_info.chr != '23']
@@ -73,11 +66,7 @@ def preprocess_snp(snp_info):
     snp_info = snp_info[snp_info.chr != '26']
     return(snp_info)
 
-
 # ### Imputation 
-
-# In[ ]:
-
 
 def impute(snps):
     for j in range(snps.shape[1]):
@@ -102,12 +91,7 @@ def impute_chunked(snps, chunks):
     df.columns = column_index
     return df
 
-
-
 # ## Mapping
-
-# In[ ]:
-
 
 def positional_mapping(snp_info, gene_info, neighborhood):
     
@@ -142,11 +126,7 @@ def positional_mapping(snp_info, gene_info, neighborhood):
     
     return(mapping)
 
-
 # ## Interactions
-
-# In[ ]:
-
 
 def snp_interaction(interact, gene_info, snp_info):
     
@@ -176,11 +156,7 @@ def snp_interaction(interact, gene_info, snp_info):
   
     return(interact_snp, interact_sub)
 
-
 # ## Metrics
-
-# In[7]:
-
 
 def pooling(scores, pool):
     
@@ -200,7 +176,6 @@ def pooling(scores, pool):
     else:
         #sys.exit('Wrong input for pooling method!')
         raise ValueError('Wrong input for pooling method!')
-
 
 def compute_metric(X, Y, method, pool):
     
@@ -238,10 +213,7 @@ def compute_metric(X, Y, method, pool):
         raise ValueError('Wrong input for metric!')
     return score
 
-
 # ## ISNs calculation
-
-# In[8]:
 
 def isn_calculation_all(df, interact_snp, interact_gene, metric, pool):
     import numpy as np
@@ -271,11 +243,7 @@ def isn_calculation_all(df, interact_snp, interact_gene, metric, pool):
     isn = pd.DataFrame(isn, columns=[a+'_'+b for a,b in interact_gene.values])
     return(isn)
 
-
 # ## Data calling
-
-# In[ ]:
-
 
 gene_info = preprocess_gtf(gtf)
 
@@ -288,10 +256,3 @@ tmp = positional_mapping(snp_info, gene_info, neighborhood=0)
 interact_snp, interact_sub = snp_interaction(interact, gene_info, snp_info)
 
 df_isn = isn_calculation_all(df, interact_snp, interact_sub, 'spearman', 'max')
-
-
-
-
-
-
-
