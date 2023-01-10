@@ -79,10 +79,16 @@ import ibisn
 ibisn.isn_calculation_all(df, interact_snp, interact_gene, metric, pool)
 ```
 
+For more examples, please refer to the _Documentation_.
+
 ## Roadmap
-- [] Complete the _Usage_ section
-- [] Add documentation with examples
-- [] Consider a new function for functional mapping
+- [ ] Complete the _Usage_ section
+- [ ] Add documentation with examples
+- [ ] Consider a new function for functional mapping
+- [ ] Add:
+    - [ ] Imputation with file saving
+    - [ ] Function ```isn_calculation_per_edge```
+    - [ ] Progressbar
 
 ## Contributing
 
