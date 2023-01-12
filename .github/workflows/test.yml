@@ -18,6 +18,9 @@ jobs:
 
       - uses: Gr1N/setup-poetry@v8
 
+      - name: Install dependencies
+        run: poetry install
+
       - name: PyLint
         run: poetry run pylint ib_isn/
 
