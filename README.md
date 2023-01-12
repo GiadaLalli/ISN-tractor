@@ -1,4 +1,4 @@
-# Ib-ISN
+# ISN-tractor
 Interactome based Individual Specific Networks (Ib-ISN)
 
 ## About the project: Interactome Based Individual Specific Networks (Ib-ISN) Computation and its relevance
