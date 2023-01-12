@@ -25,7 +25,7 @@ was the impetus for our decision to create a novel approach for computing intera
 ### Installation
 
 ```bash
-pip install ibisn
+pip install isn-tractor
 ```
 
 ## Usage
