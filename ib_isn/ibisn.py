@@ -15,26 +15,14 @@ import torch as t
 import pickle
 import marshal
 
-# # Data Upload
-
-# snp dset
-df = pd.read_csv(filename)
-
-# snp info: name, chr, position
-snp_info = pd.read_csv(filename)
-
-# tuple: interactome interactions
-interact = pd.read_csv(filename)
-
-# list of genes in the human genome with chr:start-stop
-gtf = pd.read_csv(filename)
-
 # # Functions
 
 # ## Preprocessing
 
-
 def preprocess_gtf(gtf):
+    
+    # list of genes in the human genome with chr:start-stop
+    gtf = pd.read_csv(filename)
 
     gtf[["ENSEMBL_ID", "B"]] = gtf[8].str.split(";", 1, expand=True)
     gtf[["VERSION", "D"]] = gtf["B"].str.split(";", 1, expand=True)
@@ -60,17 +48,18 @@ def preprocess_gtf(gtf):
 
     return gene_info
 
-
 def preprocess_snp(snp_info):
+    
+    # snp info: name, chr, position
+    snp_info = pd.read_csv(filename)
+
     snp_info = snp_info.set_index("name")
     snp_info = snp_info[snp_info.chr != "23"]
     snp_info = snp_info[snp_info.chr != "25"]
     snp_info = snp_info[snp_info.chr != "26"]
     return snp_info
 
-
 # ### Imputation
-
 
 def impute(snps):
     for j in range(snps.shape[1]):
@@ -86,7 +75,6 @@ def impute(snps):
         snps.iloc[miss, j] = mod
     return snps
 
-
 def impute_chunked(snps, chunks):
     column_index = snps.columns.tolist()
     chunk_idx = np.array_split(np.arange(snps.shape[1]), chunks)
@@ -96,9 +84,7 @@ def impute_chunked(snps, chunks):
     df.columns = column_index
     return df
 
-
 # ## Mapping
-
 
 def positional_mapping(snp_info, gene_info, neighborhood):
 
@@ -140,9 +126,7 @@ def positional_mapping(snp_info, gene_info, neighborhood):
 
     return mapping
 
-
 # ## Interactions
-
 
 def snp_interaction(interact, gene_info, snp_info):
 
@@ -157,9 +141,12 @@ def snp_interaction(interact, gene_info, snp_info):
                  where the 2 columns are the chromosome and position of every SNP.
     :return: a list of tuples whose elements are 2 lists.
     """
+    
+    # tuple: interactome interactions
+    interact = pd.read_csv(filename)
 
     mapping = positional_mapping(snp_info, gene_info, 2000)
-
+    
     interact_sub = []
     interact_snp = []
     interact = interact.to_records(index=False)
@@ -172,9 +159,7 @@ def snp_interaction(interact, gene_info, snp_info):
 
     return (interact_snp, interact_sub)
 
-
 # ## Metrics
-
 
 def pooling(scores, pool):
 
@@ -194,7 +179,6 @@ def pooling(scores, pool):
     else:
         # sys.exit('Wrong input for pooling method!')
         raise ValueError("Wrong input for pooling method!")
-
 
 def compute_metric(X, Y, method, pool):
 
@@ -232,9 +216,7 @@ def compute_metric(X, Y, method, pool):
         raise ValueError("Wrong input for metric!")
     return score
 
-
 # ## ISNs calculation
-
 
 def isn_calculation_all(df, interact_snp, interact_gene, metric, pool):
     import numpy as np
@@ -265,18 +247,3 @@ def isn_calculation_all(df, interact_snp, interact_gene, metric, pool):
 
     isn = pd.DataFrame(isn, columns=[a + "_" + b for a, b in interact_gene.values])
     return isn
-
-
-# ## Data calling
-
-gene_info = preprocess_gtf(gtf)
-
-snp_info = preprocess_snp(snp_info)
-
-df = impute(df)
-
-tmp = positional_mapping(snp_info, gene_info, neighborhood=0)
-
-interact_snp, interact_sub = snp_interaction(interact, gene_info, snp_info)
-
-df_isn = isn_calculation_all(df, interact_snp, interact_sub, "spearman", "max")
