@@ -1,11 +1,14 @@
 [tool.poetry]
-name = "ib-isn"
+name = "isn-tractor"
 version = "0.0.1"
 description = "Interactome based Individual Specific Networks"
 authors = ["Giada Lalli <giada.lalli@kuleuven.be>",
+           "Zuqi Li <zuqi.li@kuleuven.be>",
+           "Federico Melograna <federico.melograna@kuleuven.be>",
            "VIB Bioinformatics Core Facility <bits@vib.be>"]
 readme = "README.md"
-packages = [{include = "ib_isn"}]
+license = "MIT"
+packages = [{include = "isn_tractor"}]
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.12"
