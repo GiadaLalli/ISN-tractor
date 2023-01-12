@@ -22,10 +22,10 @@ jobs:
         run: poetry install
 
       - name: PyLint
-        run: poetry run pylint ib_isn/
+        run: poetry run pylint isn_tractor/
 
       - name: Code formatting
         run: poetry run black --check .
 
       - name: Type checking
-        run: poetry run mypy ib_isn/
+        run: poetry run mypy isn_tractor/

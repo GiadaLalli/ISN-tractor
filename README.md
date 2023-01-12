@@ -34,7 +34,7 @@ pip install ibisn
 
 ```python
 import pandas as pd
-import ibisn
+import isn_tractor.ibisn as it
 
 snps = pd.read_csv("snp_dataset.csv")
 snp_meta = pd.read_csv("snp_metadata.csv")
@@ -42,33 +42,33 @@ interact = pd.read_csv("interactome_interactions.csv")
 gtf = pd.read_csv("human_genes.csv")
 
 # returns 
-gene_info = ibisn.preprocess_gtf(gtf)
+gene_info = it.preprocess_gtf(gtf)
 
 # returns 
-ibisn.preprocess_snp(snp_meta)
+it.preprocess_snp(snp_meta)
 
 # returns 
-snps = ibisn.impute(snps)
+snps = it.impute(snps)
 ```
 
 2. Mapping
 
 ```python
 # returns 
-ibisn.positional_mapping(snp_meta, gene_info, neighborhood=5)
+it.positional_mapping(snp_meta, gene_info, neighborhood=5)
 ```
 
 3. Features mapping and interaction
 
 ```python
 # returns 
-(interact_snp, interact_gene) = ibisn.snp_interaction(interact, gene_info, snp_info)
+(interact_snp, interact_gene) = it.snp_interaction(interact, gene_info, snp_info)
 ```
 
 4. Individual Specific Network (ISN) computation
 
 ```python
-isn = ibisn.isn_calculation_all(df, interact_snp, interact_gene, "spearman", "max")
+isn = it.compute_isn(df, interact_snp, interact_gene, "spearman", "max")
 ```
 
 For more examples, please refer to the _Documentation_.
