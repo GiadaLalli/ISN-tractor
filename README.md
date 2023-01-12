@@ -79,6 +79,21 @@ import ibisn
 ibisn.isn_calculation_all(df, interact_snp, interact_gene, metric, pool)
 ```
 
+TO BE MODIFIED LATER ON
+# ## Data calling
+
+gene_info = preprocess_gtf(gtf)
+
+snp_info = preprocess_snp(snp_info)
+
+df = impute(df)
+
+tmp = positional_mapping(snp_info, gene_info, neighborhood=0)
+
+interact_snp, interact_sub = snp_interaction(interact, gene_info, snp_info)
+
+df_isn = isn_calculation_all(df, interact_snp, interact_sub, "spearman", "max")
+
 For more examples, please refer to the _Documentation_.
 
 ## Roadmap
