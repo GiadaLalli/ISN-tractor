@@ -1,26 +1,28 @@
-#!/usr/bin/env python
-# coding: utf-8
+"""
+Interactome based Individual Specific Networks (Ib-ISN)
 
-# # Import Libraries
-
+Copyright 2023 Giada Lalli
+"""
+from typing import Union, Literal, Tuple, List
 import pandas as pd
 import numpy as np
-import sys
 import allel
 from scipy.stats import spearmanr
 from sklearn.metrics import normalized_mutual_info_score as mutual_info
 import torch as t
 
-# data managing
-import pickle
-import marshal
 
 # # Functions
 
 # ## Preprocessing
 
 
-def preprocess_gtf(gtf):
+def preprocess_gtf(gtf: pd.DataFrame) -> pd.DataFrame:
+    """
+    Ingest standardised human genome and remove unnecessary information
+    such that pre-processed dataframe only contains gene name,
+    chromosome, start, and stop for each feature.
+    """
     gtf[["ENSEMBL_ID", "B"]] = gtf[8].str.split(";", 1, expand=True)
     gtf[["VERSION", "D"]] = gtf["B"].str.split(";", 1, expand=True)
     gtf[["NAME", "E"]] = gtf["D"].str.split(";", 1, expand=True)
@@ -46,7 +48,11 @@ def preprocess_gtf(gtf):
     return gene_info
 
 
-def preprocess_snp(snp_info):
+def preprocess_snp(snp_info: pd.DataFrame) -> pd.DataFrame:
+    """
+    Remove chromosomes that are not needed consistent with the
+    preprocessing of the genome.
+    """
     snp_info = snp_info.set_index("name")
     snp_info = snp_info[snp_info.chr != "23"]
     snp_info = snp_info[snp_info.chr != "25"]
@@ -57,7 +63,12 @@ def preprocess_snp(snp_info):
 # ### Imputation
 
 
-def impute(snps):
+def impute(snps: pd.DataFrame) -> pd.DataFrame:
+    """
+    Estimation of missing genotypes from the haplotype or genotype reference.
+    Replacing missing data (usually stored as 9 and/or -9) with the most
+    reasonable value.
+    """
     for j in range(snps.shape[1]):
         snp = snps.iloc[:, j]
         miss = snp == -9
@@ -72,30 +83,37 @@ def impute(snps):
     return snps
 
 
-def impute_chunked(snps, chunks):
+def impute_chunked(snps: pd.DataFrame, chunks: int) -> pd.DataFrame:
+    """
+    Impute when the data is too large.
+    """
     column_index = snps.columns.tolist()
     chunk_idx = np.array_split(np.arange(snps.shape[1]), chunks)
     collected = [impute(snps.iloc[:, idx]) for idx in chunk_idx]
-    df = pd.concat(collected, axis=1)
-    df = df.reindex(columns=column_index)
-    df.columns = column_index
-    return df
+    snps_imputed = pd.concat(collected, axis=1).reindex(columns=column_index)
+    snps_imputed.columns = column_index
+    return snps_imputed
 
 
 # ## Mapping
 
 
-def positional_mapping(snp_info, gene_info, neighborhood):
+def positional_mapping(
+    snp_info: pd.DataFrame, gene_info: pd.DataFrame, neighborhood: int
+):
 
     """
     Map SNPs to genes according to the genomic location.
 
     :param snp_info: a pd data.frame of size [n_snps, 2]
-                 where the 2 columns are the chromosome and position of every SNP.
+           where the 2 columns are the chromosome and position of every SNP.
     :param gene_info: a pd data.frame of size [n_genes, 3]
-                  where the 3 columns are the chromosome, start location and end location of every gene.
-    :param neighborhood: an integer indicating how many base pairs around the gene are considered valid.
-    :return: a dict whose keys are gene IDs and values are lists of SNP IDs belonging to that gene.
+           where the 3 columns are the chromosome, start location and end
+           location of every gene.
+    :param neighborhood: an integer indicating how many base pairs around
+           the gene are considered valid.
+    :return: a dict whose keys are gene IDs and values are lists of SNP IDs
+           belonging to that gene.
     """
 
     mapping = {}
@@ -118,7 +136,7 @@ def positional_mapping(snp_info, gene_info, neighborhood):
 
         if len(idx) == 0:  # skip genes if no SNP assigned
             continue
-        elif len(idx) == 1:  # in case only 1 SNP is mapped to the gene
+        if len(idx) == 1:  # in case only 1 SNP is mapped to the gene
             mapping[gene_info.index.values[i]] = [snp_info.index.values[idx]]
         else:  # in case multiple SNPs are mapped to the gene
             mapping[gene_info.index.values[i]] = snp_info.index.values[idx]
@@ -129,31 +147,34 @@ def positional_mapping(snp_info, gene_info, neighborhood):
 # ## Interactions
 
 
-def snp_interaction(interact, gene_info, snp_info):
+def snp_interaction(
+    interact: pd.DataFrame, gene_info: pd.DataFrame, snp_info: pd.DataFrame
+) -> Tuple[List[Tuple[List[str], List[str]]], List[Tuple[str, str]]]:
 
     """
     Select the genes.
 
     :param interact: a pd data.frame of size [n_interactions, 2]
-                 where the 2 columns are the 2 gene IDs of the interaction.
+           where the 2 columns are the 2 gene IDs of the interaction.
     :param gene_info: a pd data.frame of size [n_genes, 3]
-                  where the 3 columns are the chromosome, start location and end location of every gene.
+           where the 3 columns are the chromosome, start location and
+           end location of every gene.
     :param snp_info: a pd data.frame of size [n_snps, 2]
-                 where the 2 columns are the chromosome and position of every SNP.
-    :return: a list of tuples whose elements are 2 lists.
+           where the 2 columns are the chromosome and position
+           of every SNP.
+    :return:
     """
 
     mapping = positional_mapping(snp_info, gene_info, 2000)
 
     interact_sub = []
     interact_snp = []
-    interact = interact.to_records(index=False)
-    for a, b in interact:
-        if a in mapping.keys() and b in mapping.keys():
-            interact_sub.append([a, b])
-            interact_snp.append((mapping[a], mapping[b]))
+    for gene_id_1, gene_id_2 in interact.to_records(index=False):
+        if gene_id_1 in mapping and gene_id_2 in mapping:
+            interact_sub.append((gene_id_1, gene_id_2))
+            interact_snp.append((mapping[gene_id_1], mapping[gene_id_2]))
 
-    interact_sub = pd.DataFrame(interact_sub, columns=["gene1", "gene2"])
+    interact_sub = pd.DataFrame(interact_sub, columns=["gene_id_1", "gene_id_2"])
 
     return (interact_snp, interact_sub)
 
@@ -161,7 +182,7 @@ def snp_interaction(interact, gene_info, snp_info):
 # ## Metrics
 
 
-def pooling(scores, pool):
+def __pooling(scores, pool):
 
     """
     Pool the pairwise scores together.
@@ -171,17 +192,15 @@ def pooling(scores, pool):
     :return: a single value.
     """
 
-    if pool == "average":
+    if pool in ("avg", "average"):
         return np.mean(scores)
-    elif pool == "max":
+    if pool == "max":
         return np.max(scores)
-    # let's do error handling instead of sys.exit - raise error instead
-    else:
-        # sys.exit('Wrong input for pooling method!')
-        raise ValueError("Wrong input for pooling method!")
+
+    raise ValueError("Wrong input for pooling method!")
 
 
-def compute_metric(X, Y, method, pool):
+def __compute_metric(X, Y, method, pool):  # pylint: disable=C0103
 
     """
     Compute the metric between 2 sets of SNPs.
@@ -195,25 +214,24 @@ def compute_metric(X, Y, method, pool):
     """
 
     if method == "pearson":  # Pearson correlation
+        # pylint: disable=C0103
         XY = np.concatenate([X, Y], axis=1)
         scores = np.corrcoef(XY.T)[: X.shape[1] - 1, X.shape[1] :]
-        score = pooling(scores, pool)
+        score = __pooling(scores, pool)
     elif method == "spearman":  # Spearman correlation
         scores = spearmanr(X, Y)[0]
-        score = pooling(scores, pool)
+        score = __pooling(scores, pool)
     elif method == "mutual_info":  # normalized mutual information
         scores = np.zeros((X.shape[1], Y.shape[1]))
         for i in range(X.shape[1]):
             for j in range(Y.shape[1]):
                 scores[i, j] = mutual_info(X[:, i], Y[:, j])
-        score = pooling(scores, pool)
+        score = __pooling(scores, pool)
     elif method == "LD":  # LD r^2 score
         scores = allel.rogers_huff_r_between(X.T, Y.T)  # LD r score
         scores = np.square(scores)  # LD r^2 score
-        score = pooling(scores, pool)
-        # let's do error handling instead of sys.exit - raise error instead
+        score = __pooling(scores, pool)
     else:
-        # sys.exit('Wrong input for metric!')
         raise ValueError("Wrong input for metric!")
     return score
 
@@ -221,32 +239,60 @@ def compute_metric(X, Y, method, pool):
 # ## ISNs calculation
 
 
-def isn_calculation_all(df, interact_snp, interact_gene, metric, pool):
-    import numpy as np
-    import pandas as pd
+def __isn_calculation_per_edge(snp1_list, snp2_list, metric, pool):
+    """
+    Internal
+    """
+    glob = __compute_metric(snp1_list, snp2_list, metric, pool)
+    result = []
 
-    isn = np.zeros((df.shape[0], len(interact_snp)))
+    for indx in range(snp1_list.shape[0]):
+        snp1_loo = np.delete(snp1_list, indx, axis=0)
+        snp2_loo = np.delete(snp2_list, indx, axis=0)
+        avg = __compute_metric(snp1_loo, snp2_loo, metric, pool)
+        result.append(snp1_list.shape[0] * (glob - avg) + avg)
 
-    for index, tuple in enumerate(interact_snp):
+    return result
 
-        element_one = np.array(tuple[0], dtype=object)
-        element_two = np.array(tuple[1], dtype=object)
 
-        if len(element_one) == 1:
-            x = df[element_one[0]]
-        else:
-            x = df[df.columns.intersection(element_one)]
-        if len(element_two) == 1:
-            y = df[element_two[0]]
-        else:
-            y = df[df.columns.intersection(element_two)]
+def compute_isn(
+    snps,
+    interact_snp,
+    interact_gene,
+    metric: Union[
+        Literal["pearson"], Literal["spearman"], Literal["mutual_info"], Literal["LD"]
+    ],
+    pool: Union[Literal["max"], Literal["avg"], Literal["average"]],
+):
+    """
+    Network computation guided by weighted edges given interaction relevance.
+    """
+    isn = np.zeros((snps.shape[0], len(interact_snp)))
 
-        edge = isn_calculation_per_edge(
-            t.tensor(x.values), t.tensor(y.values), metric, pool
+    for index, (snps_assoc_gene_1, snps_assoc_gene_2) in enumerate(interact_snp):
+
+        element_one = np.array(snps_assoc_gene_1, dtype=object)
+        element_two = np.array(snps_assoc_gene_2, dtype=object)
+
+        intersection_1 = (
+            snps[element_one[0]]
+            if len(element_one) == 1
+            else snps[snps.columns.intersection(element_one)]
+        )
+
+        intersection_2 = (
+            snps[element_two[0]]
+            if len(element_two) == 1
+            else snps[snps.columns.intersection(element_two)]
+        )
+
+        edge = __isn_calculation_per_edge(
+            t.tensor(intersection_1.values),  # pylint: disable=E1101
+            t.tensor(intersection_2.values),  # pylint: disable=E1101
+            metric,
+            pool,
         )
         isn[:, index] = edge
-
-        print("Edge:", index, "/", len(interact_snp))
 
     isn = pd.DataFrame(isn, columns=[a + "_" + b for a, b in interact_gene.values])
     return isn
