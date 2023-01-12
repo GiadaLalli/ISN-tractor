@@ -19,7 +19,7 @@ jobs:
       - uses: Gr1N/setup-poetry@v8
 
       - name: PyLint
-        run: poetry run pylist ib_isn/
+        run: poetry run pylint ib_isn/
 
       - name: Code formatting
         run: poetry run black --check .
