@@ -9,6 +9,7 @@ authors = ["Giada Lalli <giada.lalli@kuleuven.be>",
 readme = "README.md"
 license = "MIT"
 packages = [{include = "isn_tractor"}]
+repository = "https://github.com/GiadaLalli/ISN-tractor"
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.12"
