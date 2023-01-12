@@ -22,16 +22,16 @@ jobs:
       - name: Build
         run: poetry build
 
-      - name: Create github release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ github.ref_name }}
-          name: Release ${{ github.ref_name }}
-          prerelease: false
-          draft: true
-          files: |
-            dist/isn_tractor-*.tar.gz
-            dist/isn_tractor-*-py3-none-any.whl
+      # - name: Create github release
+      #   uses: softprops/action-gh-release@v1
+      #   with:
+      #     tag_name: ${{ github.ref_name }}
+      #     name: Release ${{ github.ref_name }}
+      #     prerelease: false
+      #     draft: true
+      #     files: |
+      #       dist/isn_tractor-*.tar.gz
+      #       dist/isn_tractor-*-py3-none-any.whl
 
       - name: Publish to PyPI
         run: poetry publish -u ${{ secrets.PYPI_USER }} -p ${{ secrets.PYPI_PASSWORD }}
