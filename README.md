@@ -102,6 +102,9 @@ Giada Lalli - giada.lalli@kuleuven.be
 
 Zuqi Li - zuqi.li@kuleuven.be
 
+Federico Melograna - federico.melograna@kuleuven.be
+
+
 Project Link: 
 
 ## Acknowledgments
