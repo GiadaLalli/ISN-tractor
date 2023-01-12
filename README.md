@@ -30,69 +30,46 @@ pip install ibisn
 
 ## Usage
 
-### Data preprocessing and imputation
+1. Data preprocessing and imputation
 
 ```python
+import pandas as pd
 import ibisn
 
-# returns 
-ibisn.preprocess_gtf(gtf)
+snps = pd.read_csv("snp_dataset.csv")
+snp_meta = pd.read_csv("snp_metadata.csv")
+interact = pd.read_csv("interactome_interactions.csv")
+gtf = pd.read_csv("human_genes.csv")
 
 # returns 
-ibisn.preprocess_snp(snp_info)
+gene_info = ibisn.preprocess_gtf(gtf)
 
 # returns 
-ibisn.impute(snps)
+ibisn.preprocess_snp(snp_meta)
 
 # returns 
-ibisn.impute_chunked(snps, chunks)
-
+snps = ibisn.impute(snps)
 ```
 
-### Mapping
+2. Mapping
 
 ```python
-import ibisn
-
 # returns 
-ibisn.positional_mapping(snp_info, gene_info, neighborhood)
-
+ibisn.positional_mapping(snp_meta, gene_info, neighborhood=5)
 ```
-### Features mapping and interaction
+
+3. Features mapping and interaction
 
 ```python
-import ibisn
-
 # returns 
-ibisn.positional_mapping(snp_info, gene_info, neighborhood)
-
-# returns 
-ibisn.snp_interaction(interact, gene_info, snp_info)
-isn_calculation_all(df, interact_snp, interact_gene, metric, pool)
+(interact_snp, interact_gene) = ibisn.snp_interaction(interact, gene_info, snp_info)
 ```
-### Individual Specific Network (ISN) computation
+
+4. Individual Specific Network (ISN) computation
 
 ```python
-import ibisn
-
-# returns 
-ibisn.isn_calculation_all(df, interact_snp, interact_gene, metric, pool)
+isn = ibisn.isn_calculation_all(df, interact_snp, interact_gene, "spearman", "max")
 ```
-
-TO BE MODIFIED LATER ON
-# ## Data calling
-
-gene_info = preprocess_gtf(gtf)
-
-snp_info = preprocess_snp(snp_info)
-
-df = impute(df)
-
-tmp = positional_mapping(snp_info, gene_info, neighborhood=0)
-
-interact_snp, interact_sub = snp_interaction(interact, gene_info, snp_info)
-
-df_isn = isn_calculation_all(df, interact_snp, interact_sub, "spearman", "max")
 
 For more examples, please refer to the _Documentation_.
 
