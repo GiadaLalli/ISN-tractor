@@ -264,7 +264,11 @@ def compute_isn(
     interact_snp,
     interact_gene,
     metric: Union[
-        Literal["pearson"], Literal["spearman"], Literal["mutual_info"], Literal["LD"]
+        Literal["pearson"],
+        Literal["spearman"],
+        Literal["mutual_info"],
+        Literal["LD"],
+        Literal["dot"],
     ],
     pool: Union[Literal["max"], Literal["avg"], Literal["average"]],
 ):
