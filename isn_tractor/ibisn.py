@@ -231,7 +231,7 @@ def __compute_metric(X, Y, method, pool):  # pylint: disable=C0103
         scores = allel.rogers_huff_r_between(X.T, Y.T)  # LD r score
         scores = np.square(scores)  # LD r^2 score
         score = __pooling(scores, pool)
-    elif method == 'dot': # dot product
+    elif method == "dot":  # dot product
         # pylint: disable=E1101
         scores = t.matmul(X.T, Y)
         score = __pooling(scores, pool)
