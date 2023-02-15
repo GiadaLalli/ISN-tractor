@@ -60,7 +60,7 @@ def preprocess_snp(snp_info: pd.DataFrame) -> pd.DataFrame:
     return snp_info
 
 
-# ### Imputation
+# ### Imputation for SNP array
 
 
 def impute(snps: pd.DataFrame) -> pd.DataFrame:
@@ -93,6 +93,18 @@ def impute_chunked(snps: pd.DataFrame, chunks: int) -> pd.DataFrame:
     snps_imputed = pd.concat(collected, axis=1).reindex(columns=column_index)
     snps_imputed.columns = column_index
     return snps_imputed
+
+# ## Imputation for gene expression
+def impute_gene(gene_df):
+    for j in range(gene_df.shape[1]):
+        gene = gene_df.iloc[:, j]
+        miss = np.isnan(gene)
+        if np.sum(miss) == 0:
+            continue
+        # compute the mode genotype of every SNP
+        mod = np.nanmean(gene)
+        gene_df.iloc[miss, j] = mod
+    return gene_df
 
 
 # ## Mapping
@@ -177,7 +189,7 @@ def snp_interaction(
     return (interact_snp, interact_sub)
 
 
-# ## Metrics
+# ## Metrics for SNP array
 
 
 def __pooling(scores, pool):
@@ -235,8 +247,35 @@ def __compute_metric(X, Y, method, pool):  # pylint: disable=C0103
         raise ValueError("Wrong input for metric!")
     return score
 
+# ## Metrics for gene expression
 
-# ## ISNs calculation
+def __compute_metric_ge(X, Y, method):
+    
+    """
+    Compute the metric between 2 genes.
+
+    :param X: a vector of size [n_samples].
+    :param Y: a vector of size [n_samples].
+    :param method: a string indicating the metric. Currently support Pearson correlation, 
+                Spearman correlation, Mutual Information and LD r^2.
+    :return: a single value for the metric.
+    """
+    
+    if method == "pearson": # Pearson correlation
+        score = pearsonr(X, Y)[0]
+    elif method == "spearman": # Spearman correlation
+        score = spearmanr(X, Y)[0]
+    elif method == "mutual_info": # normalized mutual information
+        score = mutual_info(X, Y)
+    elif method == "LD": # LD r^2 score
+        score = allel.rogers_huff_r_between(X, Y) # LD r score
+        score = np.square(score) # LD r^2 score
+    else:
+        raise ValueError('Wrong input for metric!')
+    return score
+
+
+# ## ISNs computation for SNP array
 
 
 def __isn_calculation_per_edge(snp1_list, snp2_list, metric, pool):
@@ -304,3 +343,44 @@ def compute_isn(
 
     isn = pd.DataFrame(isn, columns=[a + "_" + b for a, b in interact_gene.values])
     return isn
+
+# ## ISNs computation for gene expression
+def __isn_computation_per_edge(vector1, vector2, metric):
+    """
+    Internal
+    """
+
+    glob = __compute_metric_ge(vector1, vector2, metric)
+    result = []
+
+    for indx in range(vector1.shape[0]):
+        gene1_LOO = np.delete(vector1, indx, axis = 0)
+        gene2_LOO = np.delete(vector2, indx, axis = 0)
+        avg = __compute_metric_ge(gene1_LOO, gene2_LOO, metric)
+        result.append(vector1.shape[0]*(glob - avg) + avg )
+
+    return(result)
+
+def isn_calculation_all(df, interact, metric):
+    import numpy as np
+    import pandas as pd
+
+    isn = np.zeros((df.shape[0], len(interact)))
+
+    for index, tuple in enumerate(interact.values):
+        if not np.all(interact.iloc[index].isin(df.columns)): continue
+
+        element_one = np.array(tuple[0], dtype=object)
+        element_two = np.array(tuple[1], dtype=object)
+        
+        x = df[element_one]
+        y = df[element_two]
+    
+        edge = __isn_computation_per_edge(t.tensor(x.values), t.tensor(y.values), metric)
+        isn[:, index] = edge
+
+        print("Edge:", index, "/", len(interact))
+    
+    isn = pd.DataFrame(isn, columns=[a+'_'+b for a,b in interact.values])
+    isn = isn.iloc[:, np.where(isn.sum() != 0)[0]]
+    return(isn)
