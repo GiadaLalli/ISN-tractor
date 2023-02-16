@@ -3,7 +3,7 @@ Interactome based Individual Specific Networks (Ib-ISN)
 
 Copyright 2023 Giada Lalli
 """
-from typing import Union, Literal, Tuple, List
+from typing import Union, Literal, Tuple, List, Optional, Any, Callable
 import pandas as pd
 import numpy as np
 import allel
@@ -60,32 +60,51 @@ def preprocess_snp(snp_info: pd.DataFrame) -> pd.DataFrame:
     return snp_info
 
 
-# ### Imputation for SNP array
+# ### Imputation for SNP or Gene expression dataset
 
 
-def impute(snps: pd.DataFrame) -> pd.DataFrame:
+def mode_genotype(column: pd.Series) -> pd.Series:
+    """
+    Replace missing values in a column with the mode?
+    """
+    mod = np.argmax(
+        [
+            np.sum(column == 0),
+            np.sum(column == 1),
+            np.sum(column == 2),
+        ]
+    )
+    return column.replace(-9, mod)
+
+
+def mean_genotype(column: pd.Series) -> pd.Series:
+    """
+    Replace missing values in a column with the column mean.
+    """
+    return column.replace(np.nan, np.nanmean(column))
+
+
+def impute(
+    snps: pd.DataFrame, replace: Callable[[pd.Series], Any] = mode_genotype
+) -> pd.DataFrame:
     """
     Estimation of missing genotypes from the haplotype or genotype reference.
-    Replacing missing data (usually stored as 9 and/or -9) with the most
-    reasonable value.
+
+    replace: A function used to replace missing values in a column. By default,
+             replacing missing data (usually stored as 9 and/or -9) with the mode
+             of a column.
     """
     for j in range(snps.shape[1]):
         snp = snps.iloc[:, j]
-        miss = snp == -9
-        if np.sum(miss) == 0:
-            continue
-        n_0 = np.sum(snp == 0)
-        n_1 = np.sum(snp == 1)
-        n_2 = np.sum(snp == 2)
-        # compute the mode genotype of every SNP
-        mod = np.argmax([n_0, n_1, n_2])
-        snps.iloc[miss, j] = mod
+        snps.iloc[:, j] = replace(snp)
     return snps
 
 
-def impute_chunked(snps: pd.DataFrame, chunks: int) -> pd.DataFrame:
+def impute_chunked(
+    snps: pd.DataFrame, chunks: int, replace: Callable[[pd.Series], Any] = mode_genotype
+) -> pd.DataFrame:
     """
-    Impute when the data is too large.
+    Impute a large dataset by imputing chunks of columns.
     """
     column_index = snps.columns.tolist()
     chunk_idx = np.array_split(np.arange(snps.shape[1]), chunks)
@@ -93,18 +112,6 @@ def impute_chunked(snps: pd.DataFrame, chunks: int) -> pd.DataFrame:
     snps_imputed = pd.concat(collected, axis=1).reindex(columns=column_index)
     snps_imputed.columns = column_index
     return snps_imputed
-
-# ## Imputation for gene expression
-def impute_gene(gene_df):
-    for j in range(gene_df.shape[1]):
-        gene = gene_df.iloc[:, j]
-        miss = np.isnan(gene)
-        if np.sum(miss) == 0:
-            continue
-        # compute the mode genotype of every SNP
-        mod = np.nanmean(gene)
-        gene_df.iloc[miss, j] = mod
-    return gene_df
 
 
 # ## Mapping
