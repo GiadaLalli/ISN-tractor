@@ -108,7 +108,7 @@ def impute_chunked(
     """
     column_index = snps.columns.tolist()
     chunk_idx = np.array_split(np.arange(snps.shape[1]), chunks)
-    collected = [impute(snps.iloc[:, idx]) for idx in chunk_idx]
+    collected = [impute(snps.iloc[:, idx], replace) for idx in chunk_idx]
     snps_imputed = pd.concat(collected, axis=1).reindex(columns=column_index)
     snps_imputed.columns = column_index
     return snps_imputed
