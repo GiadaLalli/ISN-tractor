@@ -3,14 +3,26 @@ Interactome based Individual Specific Networks (Ib-ISN)
 
 Copyright 2023 Giada Lalli
 """
-from typing import Union, Literal, Tuple, List, Any, Callable
+from typing import Union, Literal, Tuple, List, Any, Callable, Dict
+from itertools import accumulate
+
 import pandas as pd
 import numpy as np
 import allel
-from scipy.stats import spearmanr
+from scipy.stats import spearmanr, pearsonr
 from sklearn.metrics import normalized_mutual_info_score as mutual_info
 import torch as t
 
+
+Metric = Union[
+    Literal["pearson"],
+    Literal["spearman"],
+    Literal["mutual_info"],
+    Literal["LD"],
+    Literal["dot"],
+]
+
+Pooling = Union[Literal["max"], Literal["avg"], Literal["average"]]
 
 # # Functions
 
@@ -29,7 +41,7 @@ def preprocess_gtf(gtf: pd.DataFrame) -> pd.DataFrame:
 
     cols = [8, 10, 12, 14]
     gtf.drop(gtf.columns[cols], axis=1, inplace=True)
-    gene_info = gtf[gtf[2].str.contains("gene")]
+    gene_info: pd.DataFrame = gtf[gtf[2].str.contains("gene")]
 
     gene_info[["gene", "ENSEMBL_ID"]] = gtf["ENSEMBL_ID"].str.split(" ", 1, expand=True)
     gene_info[["ENSEMBL_ID", "X"]] = gtf["ENSEMBL_ID"].str.split('"', 1, expand=True)
@@ -119,7 +131,7 @@ def impute_chunked(
 
 def positional_mapping(
     snp_info: pd.DataFrame, gene_info: pd.DataFrame, neighborhood: int
-):
+) -> Dict[Any, List[Any]]:
 
     """
     Map SNPs to genes according to the genomic location.
@@ -168,7 +180,7 @@ def positional_mapping(
 
 def snp_interaction(
     interact: pd.DataFrame, gene_info: pd.DataFrame, snp_info: pd.DataFrame
-) -> Tuple[List[Tuple[List[str], List[str]]], List[Tuple[str, str]]]:
+) -> Tuple[List[Tuple[List[str], List[str]]], pd.Dataframe]:
 
     """
     Select the genes.
@@ -193,15 +205,18 @@ def snp_interaction(
             interact_sub.append((gene_id_1, gene_id_2))
             interact_snp.append((mapping[gene_id_1], mapping[gene_id_2]))
 
-    interact_sub = pd.DataFrame(interact_sub, columns=["gene_id_1", "gene_id_2"])
-
-    return (interact_snp, interact_sub)
+    return (
+        interact_snp,
+        pd.DataFrame(interact_sub, columns=["gene_id_1", "gene_id_2"]),
+    )
 
 
 # ## Metrics for SNP array
 
 
-def __pooling(scores, pool):
+def __pooling(
+    scores: np._typing._ArrayLikeFloat_co, pool: Pooling
+) -> np._typing._FloatLike_co:
 
     """
     Pool the pairwise scores together.
@@ -219,7 +234,12 @@ def __pooling(scores, pool):
     raise ValueError("Wrong input for pooling method!")
 
 
-def __compute_metric(X, Y, method, pool):  # pylint: disable=C0103
+def __compute_metric(
+    X: t.Tensor,  # pylint: disable=C0103
+    Y: t.Tensor,  # pylint: disable=C0103
+    method: Metric,
+    pool: Pooling,
+) -> np._typing._FloatLike_co:
 
     """
     Compute the metric between 2 sets of SNPs.
@@ -236,88 +256,92 @@ def __compute_metric(X, Y, method, pool):  # pylint: disable=C0103
         # pylint: disable=C0103
         XY = np.concatenate([X, Y], axis=1)
         scores = np.corrcoef(XY.T)[: X.shape[1] - 1, X.shape[1] :]
-        score = __pooling(scores, pool)
-    elif method == "spearman":  # Spearman correlation
+        return __pooling(scores, pool)
+    if method == "spearman":  # Spearman correlation
         scores = spearmanr(X, Y)[0]
-        score = __pooling(scores, pool)
-    elif method == "mutual_info":  # normalized mutual information
+        return __pooling(scores, pool)
+    if method == "mutual_info":  # normalized mutual information
         scores = np.zeros((X.shape[1], Y.shape[1]))
         for i in range(X.shape[1]):
             for j in range(Y.shape[1]):
                 scores[i, j] = mutual_info(X[:, i], Y[:, j])
-        score = __pooling(scores, pool)
-    elif method == "LD":  # LD r^2 score
+        return __pooling(scores, pool)
+    if method == "LD":  # LD r^2 score
         scores = allel.rogers_huff_r_between(X.T, Y.T)  # LD r score
         scores = np.square(scores)  # LD r^2 score
-        score = __pooling(scores, pool)
-    elif method == "dot":  # dot product
-        # pylint: disable=E1101
-        scores = t.matmul(X.T, Y)
-        score = __pooling(scores, pool)
-    else:
-        raise ValueError("Wrong input for metric!")
-    return score
+        return __pooling(scores, pool)
+    if method == "dot":  # dot product
+        return __pooling(t.matmul(X.T, Y), pool)
+
+    raise ValueError("Wrong input for metric!")
+
 
 # ## Metrics for gene expression
 
+
 def __compute_metric_ge(X, Y, method):
-    
+
     """
     Compute the metric between 2 genes.
 
     :param X: a vector of size [n_samples].
     :param Y: a vector of size [n_samples].
-    :param method: a string indicating the metric. Currently support Pearson correlation, 
+    :param method: a string indicating the metric. Currently support Pearson correlation,
                 Spearman correlation, Mutual Information and LD r^2.
     :return: a single value for the metric.
     """
-    
-    if method == "pearson": # Pearson correlation
+
+    if method == "pearson":  # Pearson correlation
         score = pearsonr(X, Y)[0]
-    elif method == "spearman": # Spearman correlation
+    elif method == "spearman":  # Spearman correlation
         score = spearmanr(X, Y)[0]
-    elif method == "mutual_info": # normalized mutual information
+    elif method == "mutual_info":  # normalized mutual information
         score = mutual_info(X, Y)
-    elif method == "LD": # LD r^2 score
-        score = allel.rogers_huff_r_between(X, Y) # LD r score
-        score = np.square(score) # LD r^2 score
+    elif method == "LD":  # LD r^2 score
+        score = allel.rogers_huff_r_between(X, Y)  # LD r score
+        score = np.square(score)  # LD r^2 score
     else:
-        raise ValueError('Wrong input for metric!')
+        raise ValueError("Wrong input for metric!")
     return score
 
 
 # ## ISNs computation for SNP array
 
 
-def __isn_calculation_per_edge(snp1_list, snp2_list, metric, pool):
+def __isn_calculation_per_edge(
+    snp1: t.Tensor, snp2: t.Tensor, metric: Metric, pool: Pooling
+) -> List[np._typing._FloatLike_co]:
     """
     Internal
     """
-    glob = __compute_metric(snp1_list, snp2_list, metric, pool)
-    result = []
+    glob = __compute_metric(snp1, snp2, metric, pool)
+    snp1_acc: accumulate[  # pylint: disable=E1136
+        List[np._typing._FloatLike_co]
+    ] = accumulate(reversed(snp1), lambda x, y: x + [y.item()], initial=[])
 
-    for indx in range(snp1_list.shape[0]):
-        snp1_loo = np.delete(snp1_list, indx, axis=0)
-        snp2_loo = np.delete(snp2_list, indx, axis=0)
-        avg = __compute_metric(snp1_loo, snp2_loo, metric, pool)
-        result.append(snp1_list.shape[0] * (glob - avg) + avg)
+    snp2_acc: accumulate[  # pylint: disable=E1136
+        List[np._typing._FloatLike_co]
+    ] = accumulate(reversed(snp2), lambda x, y: x + [y.item()], initial=[])
 
-    return result
+    return [
+        snp1.shape[0] * (glob - avg) + avg  # type: ignore[call-overload,operator]
+        for (snp1_rnge, snp2_rnge) in zip(snp1_acc, snp2_acc)
+        if (
+            avg := __compute_metric(
+                t.tensor(snp1_rnge), t.tensor(snp2_rnge), metric, pool
+            )
+            or True
+        )
+    ][1:]
 
 
 def compute_isn(
-    snps,
-    interact_snp,
-    interact_gene,
-    metric: Union[
-        Literal["pearson"],
-        Literal["spearman"],
-        Literal["mutual_info"],
-        Literal["LD"],
-        Literal["dot"],
-    ],
-    pool: Union[Literal["max"], Literal["avg"], Literal["average"]],
-):
+    snps: pd.DataFrame,
+    interact_snp: pd.DataFrame,
+    interact_gene: pd.DataFrame,
+    metric: Metric,
+    pool: Pooling,
+) -> pd.DataFrame:
     """
     Network computation guided by weighted edges given interaction relevance.
     """
@@ -340,16 +364,15 @@ def compute_isn(
             else snps[snps.columns.intersection(element_two)]
         )
 
-        edge = __isn_calculation_per_edge(
-            t.tensor(intersection_1.values),  # pylint: disable=E1101
-            t.tensor(intersection_2.values),  # pylint: disable=E1101
+        isn[:, index] = __isn_calculation_per_edge(
+            t.tensor(intersection_1.values),
+            t.tensor(intersection_2.values),
             metric,
             pool,
         )
-        isn[:, index] = edge
 
-    isn = pd.DataFrame(isn, columns=[a + "_" + b for a, b in interact_gene.values])
-    return isn
+    return pd.DataFrame(isn, columns=[a + "_" + b for a, b in interact_gene.values])
+
 
 # ## ISNs computation for gene expression
 def __isn_computation_per_edge(vector1, vector2, metric):
@@ -361,12 +384,13 @@ def __isn_computation_per_edge(vector1, vector2, metric):
     result = []
 
     for indx in range(vector1.shape[0]):
-        gene1_LOO = np.delete(vector1, indx, axis = 0)
-        gene2_LOO = np.delete(vector2, indx, axis = 0)
+        gene1_LOO = np.delete(vector1, indx, axis=0)
+        gene2_LOO = np.delete(vector2, indx, axis=0)
         avg = __compute_metric_ge(gene1_LOO, gene2_LOO, metric)
-        result.append(vector1.shape[0]*(glob - avg) + avg )
+        result.append(vector1.shape[0] * (glob - avg) + avg)
 
-    return(result)
+    return result
+
 
 def isn_calculation_all(df, interact, metric):
     import numpy as np
@@ -375,19 +399,22 @@ def isn_calculation_all(df, interact, metric):
     isn = np.zeros((df.shape[0], len(interact)))
 
     for index, tuple in enumerate(interact.values):
-        if not np.all(interact.iloc[index].isin(df.columns)): continue
+        if not np.all(interact.iloc[index].isin(df.columns)):
+            continue
 
         element_one = np.array(tuple[0], dtype=object)
         element_two = np.array(tuple[1], dtype=object)
-        
+
         x = df[element_one]
         y = df[element_two]
-    
-        edge = __isn_computation_per_edge(t.tensor(x.values), t.tensor(y.values), metric)
+
+        edge = __isn_computation_per_edge(
+            t.tensor(x.values), t.tensor(y.values), metric
+        )
         isn[:, index] = edge
 
         print("Edge:", index, "/", len(interact))
-    
-    isn = pd.DataFrame(isn, columns=[a+'_'+b for a,b in interact.values])
+
+    isn = pd.DataFrame(isn, columns=[a + "_" + b for a, b in interact.values])
     isn = isn.iloc[:, np.where(isn.sum() != 0)[0]]
-    return(isn)
+    return isn
