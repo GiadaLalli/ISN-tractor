@@ -24,6 +24,8 @@ Metric = Union[
 
 Pooling = Union[Literal["max"], Literal["avg"], Literal["average"]]
 
+GeneInteraction = Tuple[List[str], List[str]]
+
 # # Functions
 
 # ## Preprocessing
@@ -180,7 +182,7 @@ def positional_mapping(
 
 def snp_interaction(
     interact: pd.DataFrame, gene_info: pd.DataFrame, snp_info: pd.DataFrame
-) -> Tuple[List[Tuple[List[str], List[str]]], pd.Dataframe]:
+) -> Tuple[List[GeneInteraction], pd.Dataframe]:
 
     """
     Select the genes.
@@ -198,16 +200,16 @@ def snp_interaction(
 
     mapping = positional_mapping(snp_info, gene_info, 2000)
 
-    interact_sub = []
+    interact_gene = []
     interact_snp = []
     for gene_id_1, gene_id_2 in interact.to_records(index=False):
         if gene_id_1 in mapping and gene_id_2 in mapping:
-            interact_sub.append((gene_id_1, gene_id_2))
+            interact_gene.append((gene_id_1, gene_id_2))
             interact_snp.append((mapping[gene_id_1], mapping[gene_id_2]))
 
     return (
         interact_snp,
-        pd.DataFrame(interact_sub, columns=["gene_id_1", "gene_id_2"]),
+        pd.DataFrame(interact_gene, columns=["gene_id_1", "gene_id_2"]),
     )
 
 
@@ -337,7 +339,7 @@ def __isn_calculation_per_edge(
 
 def compute_isn(
     snps: pd.DataFrame,
-    interact_snp: pd.DataFrame,
+    interact_snp: List[GeneInteraction],
     interact_gene: pd.DataFrame,
     metric: Metric,
     pool: Pooling,
