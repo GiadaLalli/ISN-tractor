@@ -10,7 +10,14 @@ ISN-Tractor is a PyTorch-based library for fast and scalable computation of biol
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+	
+	IndSpecNet
+	Install
+	quickstart
+	examples/index
+	buildData
+	modules
+	contact
 
 
 
