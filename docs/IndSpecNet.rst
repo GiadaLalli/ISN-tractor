@@ -14,6 +14,9 @@ What are Individual Specific Networks?
 Individual specific networks (ISNs) are an extension of personalized networks that focus on identifying differential interactions between molecules in different individuals. ISNs are computed by integrating individual-specific genetic and transcriptomic data to identify features that are differentially connected across individuals, even if they have similar expression levels. In other words, ISNs aim to capture inter-individual variation in feature-feature interactions that may be missed by traditional network analysis approaches. This makes ISNs a powerful tool for identifying personalized disease mechanisms and drug targets, and for understanding the genetic basis of inter-individual variation in disease susceptibility and drug response.
 
 ISN-Tractor: The Fastest and Most Efficient Approach for Computing Biologically Meaningful Individual Specific Networks
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
 
 Examples from the scientific world
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
