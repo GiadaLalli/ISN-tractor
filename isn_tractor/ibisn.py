@@ -237,7 +237,7 @@ def __mutual_info_metric(first, second):
 
 
 def __dot_metric(first, second):
-    return t.matmul(first.permute(*t.arange(first.ndim - 1, -1, -1)), second)
+    return t.matmul(first.permute(*t.arange(first.ndim - 1, -1, -1)), second).numpy()
 
 
 # ## ISNs computation for SNP array

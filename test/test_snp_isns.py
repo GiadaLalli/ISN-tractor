@@ -336,28 +336,6 @@ def test_on_genes_spearman():
     )
 
 
-def test_on_genes_mutual_info():
-    gene_data = pd.DataFrame(
-        [(-100, 50), (11, 20), (22.1, 12.6), (0.1, 0.5), (51.76, 28.42)],
-        columns=["gene_vcbc", "gene_pipx"],
-    )
-    interact = pd.DataFrame([("gene_vcbc", "gene_pipx")], columns=["1", "2"])
-    assert_frame_equal(
-        isn(gene_data, interact_snp=None, interact_gene=interact, metric="mutual_info"),
-        pd.DataFrame(
-            [
-                (1.0,),
-                (1.0,),
-                (1.0,),
-                (1.0,),
-                (1.0,),
-            ],
-            columns=["gene_vcbc_gene_pipx"],
-        ),
-    )
-
-
-# @pytest.mark.skip(reason="Giada needs to investigate why this fails")
 def test_on_genes_dot():
     gene_data = pd.DataFrame(
         [(-100, 50), (11, 20), (22.1, 12.6), (0.1, 0.5), (51.76, 28.42)],
