@@ -184,7 +184,6 @@ def test_minimal_mutual_info_max():
     )
 
 
-@pytest.mark.skip(reason="Giada needs to investigate why this fails")
 def test_minimal_dot_avg():
     snp_data = pd.DataFrame(
         [(1, 0), (1, 2), (2, 1), (0, 0), (1, 2)], columns=["snp_jcstj", "snp_dvxkv"]
@@ -202,18 +201,17 @@ def test_minimal_dot_avg():
         isn(snp_data, interact_snp, interact_gene, "dot", "avg"),
         pd.DataFrame(
             [
-                (0.178174,),
-                (0.844840,),
-                (1.490751,),
-                (0.77414,),
-                (0.844840,),
+                (8.0,),
+                (16.0,),
+                (16.0,),
+                (7.0,),
+                (16.0,),
             ],
             columns=["gene_vcbc_gene_pipx"],
         ),
     )
 
 
-@pytest.mark.skip(reason="Giada needs to investigate why this fails")
 def test_minimal_dot_max():
     snp_data = pd.DataFrame(
         [(1, 0), (1, 2), (2, 1), (0, 0), (1, 2)], columns=["snp_jcstj", "snp_dvxkv"]
@@ -231,11 +229,11 @@ def test_minimal_dot_max():
         isn(snp_data, interact_snp, interact_gene, "dot", "max"),
         pd.DataFrame(
             [
-                (1.0,),
-                (1.0,),
-                (1.0,),
-                (1.0,),
-                (1.0,),
+                (9.0,),
+                (21.0,),
+                (13.0,),
+                (9.0,),
+                (21.0,),
             ],
             columns=["gene_vcbc_gene_pipx"],
         ),

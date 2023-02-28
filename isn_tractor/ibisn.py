@@ -229,7 +229,7 @@ def __compute_metric(X, Y, method, pool):  # pylint: disable=C0103
         score = __pooling(scores, pool)
     elif method == "dot":  # dot product
         # pylint: disable=E1101
-        scores = t.matmul(X.T, Y)
+        scores = t.matmul(X.T, Y).numpy()
         score = __pooling(scores, pool)
     else:
         raise ValueError("Wrong input for metric!")
