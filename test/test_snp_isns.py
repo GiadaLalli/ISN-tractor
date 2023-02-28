@@ -1,5 +1,5 @@
 import pytest
-from isn_tractor.ibisn import compute_isn as isn
+from isn_tractor.ibisn import isn
 
 from numpy import array
 import pandas as pd
@@ -292,3 +292,88 @@ def test_invalid_pool_with_data():
 
     with pytest.raises(ValueError):
         isn(snp_data, interact_snp, interact_gene, "pearson", "pool")
+
+
+def test_on_genes_pearson():
+    gene_data = pd.DataFrame(
+        [(-100, 50), (11, 20), (22.1, 12.6), (0.1, 0.5), (51.76, 28.42)],
+        columns=["gene_vcbc", "gene_pipx"],
+    )
+    interact = pd.DataFrame([("gene_vcbc", "gene_pipx")], columns=["1", "2"])
+    assert_frame_equal(
+        isn(gene_data, interact_snp=None, interact_gene=interact, metric="pearson"),
+        pd.DataFrame(
+            [
+                (-6.509092,),
+                (-0.638928,),
+                (-0.740691,),
+                (0.086810,),
+                (0.348817,),
+            ],
+            columns=["gene_vcbc_gene_pipx"],
+        ),
+    )
+
+
+def test_on_genes_spearman():
+    gene_data = pd.DataFrame(
+        [(-100, 50), (11, 20), (22.1, 12.6), (0.1, 0.5), (51.76, 28.42)],
+        columns=["gene_vcbc", "gene_pipx"],
+    )
+    interact = pd.DataFrame([("gene_vcbc", "gene_pipx")], columns=["1", "2"])
+    assert_frame_equal(
+        isn(gene_data, interact_snp=None, interact_gene=interact, metric="spearman"),
+        pd.DataFrame(
+            [
+                (-3.7,),
+                (0.3,),
+                (0.3,),
+                (1.1,),
+                (1.1,),
+            ],
+            columns=["gene_vcbc_gene_pipx"],
+        ),
+    )
+
+
+def test_on_genes_mutual_info():
+    gene_data = pd.DataFrame(
+        [(-100, 50), (11, 20), (22.1, 12.6), (0.1, 0.5), (51.76, 28.42)],
+        columns=["gene_vcbc", "gene_pipx"],
+    )
+    interact = pd.DataFrame([("gene_vcbc", "gene_pipx")], columns=["1", "2"])
+    assert_frame_equal(
+        isn(gene_data, interact_snp=None, interact_gene=interact, metric="mutual_info"),
+        pd.DataFrame(
+            [
+                (1.0,),
+                (1.0,),
+                (1.0,),
+                (1.0,),
+                (1.0,),
+            ],
+            columns=["gene_vcbc_gene_pipx"],
+        ),
+    )
+
+
+# @pytest.mark.skip(reason="Giada needs to investigate why this fails")
+def test_on_genes_dot():
+    gene_data = pd.DataFrame(
+        [(-100, 50), (11, 20), (22.1, 12.6), (0.1, 0.5), (51.76, 28.42)],
+        columns=["gene_vcbc", "gene_pipx"],
+    )
+    interact = pd.DataFrame([("gene_vcbc", "gene_pipx")], columns=["1", "2"])
+    assert_frame_equal(
+        isn(gene_data, interact_snp=None, interact_gene=interact, metric="dot"),
+        pd.DataFrame(
+            [
+                (-23030.4708,),
+                (-2150.4708,),
+                (-1916.6308,),
+                (-3030.2708,),
+                (2853.606,),
+            ],
+            columns=["gene_vcbc_gene_pipx"],
+        ),
+    )

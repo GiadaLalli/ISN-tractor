@@ -3,13 +3,26 @@ Interactome based Individual Specific Networks (Ib-ISN)
 
 Copyright 2023 Giada Lalli
 """
-from typing import Union, Literal, Tuple, List, Any, Callable
+from typing import Union, Literal, Tuple, List, Any, Callable, Optional
 import pandas as pd
 import numpy as np
-import allel
-from scipy.stats import spearmanr
+from numpy._typing import _ArrayLikeFloat_co, _FloatLike_co
+from scipy.stats import pearsonr, spearmanr
 from sklearn.metrics import normalized_mutual_info_score as mutual_info
 import torch as t
+
+
+Metric = Union[
+    Literal["pearson"],
+    Literal["spearman"],
+    Literal["mutual_info"],
+    Literal["LD"],
+    Literal["dot"],
+]
+
+Pooling = Union[Literal["max"], Literal["avg"], Literal["average"]]
+
+GeneInteraction = Tuple[List[str], List[str]]
 
 
 # # Functions
@@ -167,7 +180,7 @@ def positional_mapping(
 
 def snp_interaction(
     interact: pd.DataFrame, gene_info: pd.DataFrame, snp_info: pd.DataFrame
-) -> Tuple[List[Tuple[List[str], List[str]]], List[Tuple[str, str]]]:
+) -> Tuple[List[GeneInteraction], pd.DataFrame]:
     """
     Select the genes.
 
@@ -184,210 +197,167 @@ def snp_interaction(
 
     mapping = positional_mapping(snp_info, gene_info, 2000)
 
-    interact_sub = []
+    interact_gene = []
     interact_snp = []
     for gene_id_1, gene_id_2 in interact.to_records(index=False):
         if gene_id_1 in mapping and gene_id_2 in mapping:
-            interact_sub.append((gene_id_1, gene_id_2))
+            interact_gene.append((gene_id_1, gene_id_2))
             interact_snp.append((mapping[gene_id_1], mapping[gene_id_2]))
 
-    interact_sub = pd.DataFrame(interact_sub, columns=["gene_id_1", "gene_id_2"])
-
-    return (interact_snp, interact_sub)
+    return (
+        interact_snp,
+        pd.DataFrame(interact_gene, columns=["gene_id_1", "gene_id_2"]),
+    )
 
 
 # ## Metrics for SNP array
 
 
-def __pooling(scores, pool):
-    """
-    Pool the pairwise scores together.
+def __pearson_metric(first, second):
+    if (first.dim(), second.dim()) == (1, 1):
+        return pearsonr(first, second).statistic
 
-    :param scores: a matrix containing all the scores.
-    :param pool: a string indicating the pooling method. Currently only average- and max-pooling.
-    :return: a single value.
-    """
-
-    if pool in ("avg", "average"):
-        return np.mean(scores)
-    if pool == "max":
-        return np.max(scores)
-
-    raise ValueError("Wrong input for pooling method!")
+    combined = np.concatenate([first, second], axis=1)
+    return np.corrcoef(combined.T)[: first.shape[1] - 1, first.shape[1] :]
 
 
-def __compute_metric(X, Y, method, pool):  # pylint: disable=C0103
-    """
-    Compute the metric between 2 sets of SNPs.
+def __spearman_metric(first, second):
+    return spearmanr(first, second).statistic
 
-    :param X: a matrix of size [n_samples, n_snps1].
-    :param Y: a matrix of size [n_samples, n_snps2].
-    :param method: a string indicating the metric. Currently support Pearson correlation,
-                Spearman correlation, Mutual Information and LD r^2.
-    :param pool: a string indicating the pooling method. Currently only average- and max-pooling.
-    :return: a single value for the metric.
-    """
 
-    if method == "pearson":  # Pearson correlation
-        # pylint: disable=C0103
-        XY = np.concatenate([X, Y], axis=1)
-        scores = np.corrcoef(XY.T)[: X.shape[1] - 1, X.shape[1] :]
-        score = __pooling(scores, pool)
-    elif method == "spearman":  # Spearman correlation
-        scores = spearmanr(X, Y)[0]
-        score = __pooling(scores, pool)
-    elif method == "mutual_info":  # normalized mutual information
-        scores = np.zeros((X.shape[1], Y.shape[1]))
-        for i in range(X.shape[1]):
-            for j in range(Y.shape[1]):
-                scores[i, j] = mutual_info(X[:, i], Y[:, j])
-        score = __pooling(scores, pool)
-    elif method == "LD":  # LD r^2 score
-        scores = allel.rogers_huff_r_between(X.T, Y.T)  # LD r score
-        scores = np.square(scores)  # LD r^2 score
-        score = __pooling(scores, pool)
-    elif method == "dot":  # dot product
-        # pylint: disable=E1101
-        scores = t.matmul(X.T, Y).numpy()
-        score = __pooling(scores, pool)
-    else:
-        raise ValueError("Wrong input for metric!")
-    return score
+def __mutual_info_metric(first, second):
+    if (first.dim(), second.dim()) == (1, 1):
+        return mutual_info(first, second)
 
-# ## Metrics for gene expression
+    scores = np.zeros((first.shape[1], second.shape[1]))
+    for i in range(first.shape[1]):
+        for j in range(second.shape[1]):
+            scores[i, j] = mutual_info(first[:, i], second[:, j])
+    return scores
 
-def __compute_metric_ge(X, Y, method):
-    
-    """
-    Compute the metric between 2 genes.
 
-    :param X: a vector of size [n_samples].
-    :param Y: a vector of size [n_samples].
-    :param method: a string indicating the metric. Currently support Pearson correlation, 
-                Spearman correlation, Mutual Information and LD r^2.
-    :return: a single value for the metric.
-    """
-    
-    if method == "pearson": # Pearson correlation
-        score = pearsonr(X, Y)[0]
-    elif method == "spearman": # Spearman correlation
-        score = spearmanr(X, Y)[0]
-    elif method == "mutual_info": # normalized mutual information
-        score = mutual_info(X, Y)
-    elif method == "LD": # LD r^2 score
-        score = allel.rogers_huff_r_between(X, Y) # LD r score
-        score = np.square(score) # LD r^2 score
-    else:
-        raise ValueError('Wrong input for metric!')
-    return score
+def __dot_metric(first, second):
+    return t.matmul(first.permute(*t.arange(first.ndim - 1, -1, -1)), second)
 
 
 # ## ISNs computation for SNP array
 
 
-def __isn_calculation_per_edge(snp1_list, snp2_list, metric, pool):
+def __isn_calculation_per_edge(
+    snp1_list,
+    snp2_list,
+    metric,
+    pool: Callable[
+        [Union[_ArrayLikeFloat_co, _FloatLike_co]],
+        _FloatLike_co,
+    ],
+):
     """
     Internal
     """
-    glob = __compute_metric(snp1_list, snp2_list, metric, pool)
+    glob = pool(metric(snp1_list, snp2_list))
     result = []
 
     for indx in range(snp1_list.shape[0]):
         snp1_loo = np.delete(snp1_list, indx, axis=0)
         snp2_loo = np.delete(snp2_list, indx, axis=0)
-        avg = __compute_metric(snp1_loo, snp2_loo, metric, pool)
+        avg = pool(metric(snp1_loo, snp2_loo))
+        # type: ignore[call-overload,operator]
         result.append(snp1_list.shape[0] * (glob - avg) + avg)
 
     return result
 
 
-def compute_isn(
-    snps,
+def __make_array(*xs):
+    return np.array(xs, dtype=object)
+
+
+def __identity(value: _FloatLike_co) -> _FloatLike_co:
+    return value
+
+
+def isn(
+    data,
     interact_snp,
     interact_gene,
     metric: Union[
         Literal["pearson"],
         Literal["spearman"],
         Literal["mutual_info"],
-        Literal["LD"],
         Literal["dot"],
+        Callable[
+            [t.Tensor, t.Tensor],
+            Union[_ArrayLikeFloat_co, _FloatLike_co],
+        ],
     ],
-    pool: Union[Literal["max"], Literal["avg"], Literal["average"]],
+    pool: Optional[
+        Union[
+            Literal["max"],
+            Literal["avg"],
+            Literal["average"],
+            Callable[[_ArrayLikeFloat_co], _FloatLike_co],
+        ]
+    ] = None,
 ):
     """
     Network computation guided by weighted edges given interaction relevance.
     """
     if metric not in ["pearson", "spearman", "mutual_info", "dot"]:
         raise ValueError(f'"{metric}" is not a valid metric')
-    if pool not in ["max", "avg", "average"]:
+    if pool is not None and pool not in ["max", "avg", "average"]:
         raise ValueError(f'"{pool}" is not a valid pooling method')
 
-    isn = np.zeros((snps.shape[0], len(interact_snp)))
+    if isinstance(metric, str):
+        metric_fn = {
+            "pearson": __pearson_metric,
+            "spearman": __spearman_metric,
+            "mutual_info": __mutual_info_metric,
+            "dot": __dot_metric,
+        }.get(metric)
+    else:
+        metric_fn = metric
 
-    for index, (snps_assoc_gene_1, snps_assoc_gene_2) in enumerate(interact_snp):
-        element_one = np.array(snps_assoc_gene_1, dtype=object)
-        element_two = np.array(snps_assoc_gene_2, dtype=object)
+    if pool is None:
+        pooling_fn = __identity
+    elif isinstance(pool, str):
+        pooling_fn = {
+            "max": np.max,
+            "avg": np.mean,
+            "average": np.mean,
+        }.get(pool)
+    else:
+        pooling_fn = pool
+
+    if interact_snp is not None:
+        interact = interact_snp
+    else:
+        interact = interact_gene.values
+    network = np.zeros((data.shape[0], len(interact)))
+    assert np.all(snp.isin(data.columns) for snp in interact)
+    assert metric_fn is not None
+    assert pooling_fn is not None
+
+    for index, (assoc_gene_1, assoc_gene_2) in enumerate(interact):
+        element_one = __make_array(assoc_gene_1)
+        element_two = __make_array(assoc_gene_2)
 
         intersection_1 = (
-            snps[element_one[0]]
+            data[element_one[0]]
             if len(element_one) == 1
-            else snps[snps.columns.intersection(element_one)]
+            else data[data.columns.intersection(element_one)]
         )
 
         intersection_2 = (
-            snps[element_two[0]]
+            data[element_two[0]]
             if len(element_two) == 1
-            else snps[snps.columns.intersection(element_two)]
+            else data[data.columns.intersection(element_two)]
         )
 
-        edge = __isn_calculation_per_edge(
-            t.tensor(intersection_1.values),  # pylint: disable=E1101
-            t.tensor(intersection_2.values),  # pylint: disable=E1101
-            metric,
-            pool,
+        network[:, index] = __isn_calculation_per_edge(
+            t.tensor(intersection_1.values),
+            t.tensor(intersection_2.values),
+            metric_fn,
+            pooling_fn,
         )
-        isn[:, index] = edge
 
-    isn = pd.DataFrame(isn, columns=[a + "_" + b for a, b in interact_gene.values])
-    return isn
-
-# ## ISNs computation for gene expression
-def __isn_computation_per_edge(vector1, vector2, metric):
-    """
-    Internal
-    """
-
-    glob = __compute_metric_ge(vector1, vector2, metric)
-    result = []
-
-    for indx in range(vector1.shape[0]):
-        gene1_LOO = np.delete(vector1, indx, axis = 0)
-        gene2_LOO = np.delete(vector2, indx, axis = 0)
-        avg = __compute_metric_ge(gene1_LOO, gene2_LOO, metric)
-        result.append(vector1.shape[0]*(glob - avg) + avg )
-
-    return(result)
-
-def isn_calculation_all(df, interact, metric):
-    import numpy as np
-    import pandas as pd
-
-    isn = np.zeros((df.shape[0], len(interact)))
-
-    for index, tuple in enumerate(interact.values):
-        if not np.all(interact.iloc[index].isin(df.columns)): continue
-
-        element_one = np.array(tuple[0], dtype=object)
-        element_two = np.array(tuple[1], dtype=object)
-        
-        x = df[element_one]
-        y = df[element_two]
-    
-        edge = __isn_computation_per_edge(t.tensor(x.values), t.tensor(y.values), metric)
-        isn[:, index] = edge
-
-        print("Edge:", index, "/", len(interact))
-    
-    isn = pd.DataFrame(isn, columns=[a+'_'+b for a,b in interact.values])
-    isn = isn.iloc[:, np.where(isn.sum() != 0)[0]]
-    return(isn)
+    return pd.DataFrame(network, columns=[a + "_" + b for a, b in interact_gene.values])
