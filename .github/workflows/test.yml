@@ -29,3 +29,6 @@ jobs:
 
       - name: Type checking
         run: poetry run mypy isn_tractor/
+
+      - name: Tests
+        run: poetry run pytest --junitxml=report.xml --cov=isn_tractor/ --cov-fail-under=45

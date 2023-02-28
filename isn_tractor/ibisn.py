@@ -271,6 +271,11 @@ def compute_isn(
     """
     Network computation guided by weighted edges given interaction relevance.
     """
+    if metric not in ["pearson", "spearman", "mutual_info", "dot"]:
+        raise ValueError(f'"{metric}" is not a valid metric')
+    if pool not in ["max", "avg", "average"]:
+        raise ValueError(f'"{pool}" is not a valid pooling method')
+
     isn = np.zeros((snps.shape[0], len(interact_snp)))
 
     for index, (snps_assoc_gene_1, snps_assoc_gene_2) in enumerate(interact_snp):
