@@ -101,7 +101,6 @@ def impute_chunked(snps: pd.DataFrame, chunks: int) -> pd.DataFrame:
 def positional_mapping(
     snp_info: pd.DataFrame, gene_info: pd.DataFrame, neighborhood: int
 ):
-
     """
     Map SNPs to genes according to the genomic location.
 
@@ -150,7 +149,6 @@ def positional_mapping(
 def snp_interaction(
     interact: pd.DataFrame, gene_info: pd.DataFrame, snp_info: pd.DataFrame
 ) -> Tuple[List[Tuple[List[str], List[str]]], List[Tuple[str, str]]]:
-
     """
     Select the genes.
 
@@ -183,7 +181,6 @@ def snp_interaction(
 
 
 def __pooling(scores, pool):
-
     """
     Pool the pairwise scores together.
 
@@ -201,7 +198,6 @@ def __pooling(scores, pool):
 
 
 def __compute_metric(X, Y, method, pool):  # pylint: disable=C0103
-
     """
     Compute the metric between 2 sets of SNPs.
 
@@ -278,7 +274,6 @@ def compute_isn(
     isn = np.zeros((snps.shape[0], len(interact_snp)))
 
     for index, (snps_assoc_gene_1, snps_assoc_gene_2) in enumerate(interact_snp):
-
         element_one = np.array(snps_assoc_gene_1, dtype=object)
         element_two = np.array(snps_assoc_gene_2, dtype=object)
 
