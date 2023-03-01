@@ -315,7 +315,7 @@ def __identity(value: _FloatLike_co) -> _FloatLike_co:
     return value
 
 
-def isn(
+def sparse_isn(
     data,
     interact_unmapped,
     interact_mapped,

@@ -1,5 +1,5 @@
 import pytest
-from isn_tractor.ibisn import isn
+from isn_tractor.ibisn import sparse_isn
 
 from numpy import array
 import pandas as pd
@@ -11,7 +11,7 @@ def test_empty_inputs():
     interact_snp = []
     interact_gene = pd.DataFrame()
     with pytest.raises(ValueError):
-        isn(snp_data, interact_snp, interact_gene, "pearson", "avg"),
+        sparse_isn(snp_data, interact_snp, interact_gene, "pearson", "avg"),
 
 
 def test_snp_pearson_avg():
@@ -28,7 +28,7 @@ def test_snp_pearson_avg():
         [("gene_vcbc", "gene_pipx")], columns=["gene_id_1", "gene_id_2"]
     )
     assert_frame_equal(
-        isn(snp_data, interact_snp, interact_gene, "pearson", "avg"),
+        sparse_isn(snp_data, interact_snp, interact_gene, "pearson", "avg"),
         pd.DataFrame(
             [
                 (0.531081,),
@@ -56,7 +56,7 @@ def test_snp_pearson_max():
         [("gene_vcbc", "gene_pipx")], columns=["gene_id_1", "gene_id_2"]
     )
     assert_frame_equal(
-        isn(snp_data, interact_snp, interact_gene, "pearson", "max"),
+        sparse_isn(snp_data, interact_snp, interact_gene, "pearson", "max"),
         pd.DataFrame(
             [
                 (1.0,),
@@ -84,7 +84,7 @@ def test_snp_spearman_avg():
         [("gene_vcbc", "gene_pipx")], columns=["gene_id_1", "gene_id_2"]
     )
     assert_frame_equal(
-        isn(snp_data, interact_snp, interact_gene, "spearman", "avg"),
+        sparse_isn(snp_data, interact_snp, interact_gene, "spearman", "avg"),
         pd.DataFrame(
             [
                 (0.717217,),
@@ -112,7 +112,7 @@ def test_snp_spearman_max():
         [("gene_vcbc", "gene_pipx")], columns=["gene_id_1", "gene_id_2"]
     )
     assert_frame_equal(
-        isn(snp_data, interact_snp, interact_gene, "spearman", "max"),
+        sparse_isn(snp_data, interact_snp, interact_gene, "spearman", "max"),
         pd.DataFrame(
             [
                 (1.0,),
@@ -140,7 +140,7 @@ def test_snp_mutual_info_avg():
         [("gene_vcbc", "gene_pipx")], columns=["gene_id_1", "gene_id_2"]
     )
     assert_frame_equal(
-        isn(snp_data, interact_snp, interact_gene, "mutual_info", "avg"),
+        sparse_isn(snp_data, interact_snp, interact_gene, "mutual_info", "avg"),
         pd.DataFrame(
             [
                 (0.178174,),
@@ -168,7 +168,7 @@ def test_snp_mutual_info_max():
         [("gene_vcbc", "gene_pipx")], columns=["gene_id_1", "gene_id_2"]
     )
     assert_frame_equal(
-        isn(snp_data, interact_snp, interact_gene, "mutual_info", "max"),
+        sparse_isn(snp_data, interact_snp, interact_gene, "mutual_info", "max"),
         pd.DataFrame(
             [
                 (1.0,),
@@ -196,7 +196,7 @@ def test_snp_dot_avg():
         [("gene_vcbc", "gene_pipx")], columns=["gene_id_1", "gene_id_2"]
     )
     assert_frame_equal(
-        isn(snp_data, interact_snp, interact_gene, "dot", "avg"),
+        sparse_isn(snp_data, interact_snp, interact_gene, "dot", "avg"),
         pd.DataFrame(
             [
                 (8.0,),
@@ -224,7 +224,7 @@ def test_snp_dot_max():
         [("gene_vcbc", "gene_pipx")], columns=["gene_id_1", "gene_id_2"]
     )
     assert_frame_equal(
-        isn(snp_data, interact_snp, interact_gene, "dot", "max"),
+        sparse_isn(snp_data, interact_snp, interact_gene, "dot", "max"),
         pd.DataFrame(
             [
                 (9.0,),
@@ -271,7 +271,7 @@ def test_snp_larger():
         columns=["gene_id_1", "gene_id_2"],
     )
 
-    computed = isn(snp_data, interact_snp, interact_gene, "pearson", "average")
+    computed = sparse_isn(snp_data, interact_snp, interact_gene, "pearson", "average")
     print(computed, flush=True)
 
     assert_frame_equal(
@@ -300,7 +300,7 @@ def test_invalid_metric_without_data():
     interact_gene = pd.DataFrame()
 
     with pytest.raises(ValueError):
-        isn(snp_data, interact_snp, interact_gene, "metric", "avg")
+        sparse_isn(snp_data, interact_snp, interact_gene, "metric", "avg")
 
 
 def test_invalid_metric_with_data():
@@ -318,7 +318,7 @@ def test_invalid_metric_with_data():
     )
 
     with pytest.raises(ValueError):
-        isn(snp_data, interact_snp, interact_gene, "metric", "avg")
+        sparse_isn(snp_data, interact_snp, interact_gene, "metric", "avg")
 
 
 def test_invalid_pool_without_data():
@@ -327,7 +327,7 @@ def test_invalid_pool_without_data():
     interact_gene = pd.DataFrame()
 
     with pytest.raises(ValueError):
-        isn(snp_data, interact_snp, interact_gene, "pearson", "pool")
+        sparse_isn(snp_data, interact_snp, interact_gene, "pearson", "pool")
 
 
 def test_invalid_pool_with_data():
@@ -345,7 +345,7 @@ def test_invalid_pool_with_data():
     )
 
     with pytest.raises(ValueError):
-        isn(snp_data, interact_snp, interact_gene, "pearson", "pool")
+        sparse_isn(snp_data, interact_snp, interact_gene, "pearson", "pool")
 
 
 def test_on_genes_pearson():
@@ -355,7 +355,7 @@ def test_on_genes_pearson():
     )
     interact = pd.DataFrame([("gene_vcbc", "gene_pipx")], columns=["1", "2"])
     assert_frame_equal(
-        isn(
+        sparse_isn(
             gene_data,
             interact_unmapped=None,
             interact_mapped=interact,
@@ -381,7 +381,7 @@ def test_on_genes_spearman():
     )
     interact = pd.DataFrame([("gene_vcbc", "gene_pipx")], columns=["1", "2"])
     assert_frame_equal(
-        isn(
+        sparse_isn(
             gene_data,
             interact_unmapped=None,
             interact_mapped=interact,
@@ -407,7 +407,9 @@ def test_on_genes_dot():
     )
     interact = pd.DataFrame([("gene_vcbc", "gene_pipx")], columns=["1", "2"])
     assert_frame_equal(
-        isn(gene_data, interact_unmapped=None, interact_mapped=interact, metric="dot"),
+        sparse_isn(
+            gene_data, interact_unmapped=None, interact_mapped=interact, metric="dot"
+        ),
         pd.DataFrame(
             [
                 (-23030.4708,),
