@@ -1,5 +1,5 @@
 import pytest
-from isn_tractor.ibisn import compute_isn as isn
+from isn_tractor.ibisn import sparse_isn
 
 from numpy import array
 import pandas as pd
@@ -10,13 +10,11 @@ def test_empty_inputs():
     snp_data = pd.DataFrame()
     interact_snp = []
     interact_gene = pd.DataFrame()
-    assert_frame_equal(
-        isn(snp_data, interact_snp, interact_gene, "pearson", "avg"),
-        pd.DataFrame(index=pd.RangeIndex(0, 0, 1)),
-    )
+    with pytest.raises(ValueError):
+        sparse_isn(snp_data, interact_snp, interact_gene, "pearson", "avg"),
 
 
-def test_minimal_pearson_avg():
+def test_snp_pearson_avg():
     snp_data = pd.DataFrame(
         [(1, 0), (1, 2), (2, 1), (0, 0), (1, 2)], columns=["snp_jcstj", "snp_dvxkv"]
     )
@@ -30,7 +28,7 @@ def test_minimal_pearson_avg():
         [("gene_vcbc", "gene_pipx")], columns=["gene_id_1", "gene_id_2"]
     )
     assert_frame_equal(
-        isn(snp_data, interact_snp, interact_gene, "pearson", "avg"),
+        sparse_isn(snp_data, interact_snp, interact_gene, "pearson", "avg"),
         pd.DataFrame(
             [
                 (0.531081,),
@@ -44,7 +42,7 @@ def test_minimal_pearson_avg():
     )
 
 
-def test_minimal_pearson_max():
+def test_snp_pearson_max():
     snp_data = pd.DataFrame(
         [(1, 0), (1, 2), (2, 1), (0, 0), (1, 2)], columns=["snp_jcstj", "snp_dvxkv"]
     )
@@ -58,7 +56,7 @@ def test_minimal_pearson_max():
         [("gene_vcbc", "gene_pipx")], columns=["gene_id_1", "gene_id_2"]
     )
     assert_frame_equal(
-        isn(snp_data, interact_snp, interact_gene, "pearson", "max"),
+        sparse_isn(snp_data, interact_snp, interact_gene, "pearson", "max"),
         pd.DataFrame(
             [
                 (1.0,),
@@ -72,7 +70,7 @@ def test_minimal_pearson_max():
     )
 
 
-def test_minimal_spearman_avg():
+def test_snp_spearman_avg():
     snp_data = pd.DataFrame(
         [(1, 0), (1, 2), (2, 1), (0, 0), (1, 2)], columns=["snp_jcstj", "snp_dvxkv"]
     )
@@ -86,7 +84,7 @@ def test_minimal_spearman_avg():
         [("gene_vcbc", "gene_pipx")], columns=["gene_id_1", "gene_id_2"]
     )
     assert_frame_equal(
-        isn(snp_data, interact_snp, interact_gene, "spearman", "avg"),
+        sparse_isn(snp_data, interact_snp, interact_gene, "spearman", "avg"),
         pd.DataFrame(
             [
                 (0.717217,),
@@ -100,7 +98,7 @@ def test_minimal_spearman_avg():
     )
 
 
-def test_minimal_spearman_max():
+def test_snp_spearman_max():
     snp_data = pd.DataFrame(
         [(1, 0), (1, 2), (2, 1), (0, 0), (1, 2)], columns=["snp_jcstj", "snp_dvxkv"]
     )
@@ -114,7 +112,7 @@ def test_minimal_spearman_max():
         [("gene_vcbc", "gene_pipx")], columns=["gene_id_1", "gene_id_2"]
     )
     assert_frame_equal(
-        isn(snp_data, interact_snp, interact_gene, "spearman", "max"),
+        sparse_isn(snp_data, interact_snp, interact_gene, "spearman", "max"),
         pd.DataFrame(
             [
                 (1.0,),
@@ -128,7 +126,7 @@ def test_minimal_spearman_max():
     )
 
 
-def test_minimal_mutual_info_avg():
+def test_snp_mutual_info_avg():
     snp_data = pd.DataFrame(
         [(1, 0), (1, 2), (2, 1), (0, 0), (1, 2)], columns=["snp_jcstj", "snp_dvxkv"]
     )
@@ -142,7 +140,7 @@ def test_minimal_mutual_info_avg():
         [("gene_vcbc", "gene_pipx")], columns=["gene_id_1", "gene_id_2"]
     )
     assert_frame_equal(
-        isn(snp_data, interact_snp, interact_gene, "mutual_info", "avg"),
+        sparse_isn(snp_data, interact_snp, interact_gene, "mutual_info", "avg"),
         pd.DataFrame(
             [
                 (0.178174,),
@@ -156,7 +154,7 @@ def test_minimal_mutual_info_avg():
     )
 
 
-def test_minimal_mutual_info_max():
+def test_snp_mutual_info_max():
     snp_data = pd.DataFrame(
         [(1, 0), (1, 2), (2, 1), (0, 0), (1, 2)], columns=["snp_jcstj", "snp_dvxkv"]
     )
@@ -170,7 +168,7 @@ def test_minimal_mutual_info_max():
         [("gene_vcbc", "gene_pipx")], columns=["gene_id_1", "gene_id_2"]
     )
     assert_frame_equal(
-        isn(snp_data, interact_snp, interact_gene, "mutual_info", "max"),
+        sparse_isn(snp_data, interact_snp, interact_gene, "mutual_info", "max"),
         pd.DataFrame(
             [
                 (1.0,),
@@ -184,7 +182,7 @@ def test_minimal_mutual_info_max():
     )
 
 
-def test_minimal_dot_avg():
+def test_snp_dot_avg():
     snp_data = pd.DataFrame(
         [(1, 0), (1, 2), (2, 1), (0, 0), (1, 2)], columns=["snp_jcstj", "snp_dvxkv"]
     )
@@ -198,7 +196,7 @@ def test_minimal_dot_avg():
         [("gene_vcbc", "gene_pipx")], columns=["gene_id_1", "gene_id_2"]
     )
     assert_frame_equal(
-        isn(snp_data, interact_snp, interact_gene, "dot", "avg"),
+        sparse_isn(snp_data, interact_snp, interact_gene, "dot", "avg"),
         pd.DataFrame(
             [
                 (8.0,),
@@ -212,7 +210,7 @@ def test_minimal_dot_avg():
     )
 
 
-def test_minimal_dot_max():
+def test_snp_dot_max():
     snp_data = pd.DataFrame(
         [(1, 0), (1, 2), (2, 1), (0, 0), (1, 2)], columns=["snp_jcstj", "snp_dvxkv"]
     )
@@ -226,7 +224,7 @@ def test_minimal_dot_max():
         [("gene_vcbc", "gene_pipx")], columns=["gene_id_1", "gene_id_2"]
     )
     assert_frame_equal(
-        isn(snp_data, interact_snp, interact_gene, "dot", "max"),
+        sparse_isn(snp_data, interact_snp, interact_gene, "dot", "max"),
         pd.DataFrame(
             [
                 (9.0,),
@@ -240,13 +238,69 @@ def test_minimal_dot_max():
     )
 
 
+def test_snp_larger():
+    snp_data = pd.DataFrame(
+        [(1, 0, 1, 1), (1, 2, 2, 0), (2, 1, 0, 2), (0, 0, 1, 0), (1, 2, 0, 0)],
+        columns=["snp_a", "snp_b", "snp_c", "snp_d"],
+    )
+    interact_snp = [
+        (
+            array(["snp_a", "snp_b", "snp_c", "snp_d"], dtype=object),
+            array(["snp_a", "snp_b", "snp_c", "snp_d"], dtype=object),
+        ),
+        (
+            array(["snp_a", "snp_b", "snp_c", "snp_d"], dtype=object),
+            array(["snp_a", "snp_b", "snp_c", "snp_d"], dtype=object),
+        ),
+        (
+            array(["snp_a", "snp_b", "snp_c", "snp_d"], dtype=object),
+            array(["snp_a", "snp_b", "snp_c", "snp_d"], dtype=object),
+        ),
+        (
+            array(["snp_a", "snp_b", "snp_c", "snp_d"], dtype=object),
+            array(["snp_a", "snp_b", "snp_c", "snp_d"], dtype=object),
+        ),
+    ]
+    interact_gene = pd.DataFrame(
+        [
+            ("gene_a", "gene_b"),
+            ("gene_a", "gene_c"),
+            ("gene_b", "gene_c"),
+            ("gene_c", "gene_d"),
+        ],
+        columns=["gene_id_1", "gene_id_2"],
+    )
+
+    computed = sparse_isn(snp_data, interact_snp, interact_gene, "pearson", "average")
+    print(computed, flush=True)
+
+    assert_frame_equal(
+        computed,
+        pd.DataFrame(
+            [
+                (0.1098762, 0.1098762, 0.1098762, 0.1098762),
+                (0.847243, 0.8472431, 0.8472431, 0.8472431),
+                (-0.0930169, -0.0930169, -0.0930169, -0.0930169),
+                (0.6876522, 0.6876522, 0.6876522, 0.6876522),
+                (0.0056454, 0.0056454, 0.0056454, 0.0056454),
+            ],
+            columns=[
+                "gene_a_gene_b",
+                "gene_a_gene_c",
+                "gene_b_gene_c",
+                "gene_c_gene_d",
+            ],
+        ),
+    )
+
+
 def test_invalid_metric_without_data():
     snp_data = pd.DataFrame()
     interact_snp = []
     interact_gene = pd.DataFrame()
 
     with pytest.raises(ValueError):
-        isn(snp_data, interact_snp, interact_gene, "metric", "avg")
+        sparse_isn(snp_data, interact_snp, interact_gene, "metric", "avg")
 
 
 def test_invalid_metric_with_data():
@@ -264,7 +318,7 @@ def test_invalid_metric_with_data():
     )
 
     with pytest.raises(ValueError):
-        isn(snp_data, interact_snp, interact_gene, "metric", "avg")
+        sparse_isn(snp_data, interact_snp, interact_gene, "metric", "avg")
 
 
 def test_invalid_pool_without_data():
@@ -273,7 +327,7 @@ def test_invalid_pool_without_data():
     interact_gene = pd.DataFrame()
 
     with pytest.raises(ValueError):
-        isn(snp_data, interact_snp, interact_gene, "pearson", "pool")
+        sparse_isn(snp_data, interact_snp, interact_gene, "pearson", "pool")
 
 
 def test_invalid_pool_with_data():
@@ -291,4 +345,79 @@ def test_invalid_pool_with_data():
     )
 
     with pytest.raises(ValueError):
-        isn(snp_data, interact_snp, interact_gene, "pearson", "pool")
+        sparse_isn(snp_data, interact_snp, interact_gene, "pearson", "pool")
+
+
+def test_on_genes_pearson():
+    gene_data = pd.DataFrame(
+        [(-100, 50), (11, 20), (22.1, 12.6), (0.1, 0.5), (51.76, 28.42)],
+        columns=["gene_vcbc", "gene_pipx"],
+    )
+    interact = pd.DataFrame([("gene_vcbc", "gene_pipx")], columns=["1", "2"])
+    assert_frame_equal(
+        sparse_isn(
+            gene_data,
+            interact_unmapped=None,
+            interact_mapped=interact,
+            metric="pearson",
+        ),
+        pd.DataFrame(
+            [
+                (-6.509092,),
+                (-0.638928,),
+                (-0.740691,),
+                (0.086810,),
+                (0.348817,),
+            ],
+            columns=["gene_vcbc_gene_pipx"],
+        ),
+    )
+
+
+def test_on_genes_spearman():
+    gene_data = pd.DataFrame(
+        [(-100, 50), (11, 20), (22.1, 12.6), (0.1, 0.5), (51.76, 28.42)],
+        columns=["gene_vcbc", "gene_pipx"],
+    )
+    interact = pd.DataFrame([("gene_vcbc", "gene_pipx")], columns=["1", "2"])
+    assert_frame_equal(
+        sparse_isn(
+            gene_data,
+            interact_unmapped=None,
+            interact_mapped=interact,
+            metric="spearman",
+        ),
+        pd.DataFrame(
+            [
+                (-3.7,),
+                (0.3,),
+                (0.3,),
+                (1.1,),
+                (1.1,),
+            ],
+            columns=["gene_vcbc_gene_pipx"],
+        ),
+    )
+
+
+def test_on_genes_dot():
+    gene_data = pd.DataFrame(
+        [(-100, 50), (11, 20), (22.1, 12.6), (0.1, 0.5), (51.76, 28.42)],
+        columns=["gene_vcbc", "gene_pipx"],
+    )
+    interact = pd.DataFrame([("gene_vcbc", "gene_pipx")], columns=["1", "2"])
+    assert_frame_equal(
+        sparse_isn(
+            gene_data, interact_unmapped=None, interact_mapped=interact, metric="dot"
+        ),
+        pd.DataFrame(
+            [
+                (-23030.4708,),
+                (-2150.4708,),
+                (-1916.6308,),
+                (-3030.2708,),
+                (2853.606,),
+            ],
+            columns=["gene_vcbc_gene_pipx"],
+        ),
+    )
