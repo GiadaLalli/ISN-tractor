@@ -31,7 +31,7 @@ Metric = Union[
 
 Pooling = Union[Literal["max"], Literal["avg"], Literal["average"], PoolingFn]
 
-GeneInteraction = Tuple[List[str], List[str]]
+MappedInteraction = Tuple[List[str], List[str]]
 
 
 # # Functions
@@ -87,7 +87,7 @@ def preprocess_snp(snp_info: pd.DataFrame) -> pd.DataFrame:
 
 def mode_genotype(column: pd.Series) -> pd.Series:
     """
-    Replace missing values in a column with the mode?
+    Replace missing values in a column with the mode
     """
     mod = np.argmax(
         [
@@ -107,47 +107,48 @@ def mean_genotype(column: pd.Series) -> pd.Series:
 
 
 def impute(
-    snps: pd.DataFrame, replace: Callable[[pd.Series], Any] = mode_genotype
+    data: pd.DataFrame, replace: Callable[[pd.Series], Any] = mode_genotype
 ) -> pd.DataFrame:
     """
     Estimation of missing genotypes from the haplotype or genotype reference.
 
     replace: A function used to replace missing values in a column. By default,
              replacing missing data (usually stored as 9 and/or -9) with the mode
-             of a column.
+             of a column. You can use the supplied `mean_genotype` function for
+             continuous data or `mode_genotype` for discrete data.
     """
-    for j in range(snps.shape[1]):
-        snp = snps.iloc[:, j]
-        snps.iloc[:, j] = replace(snp)
-    return snps
+    for j in range(data.shape[1]):
+        datum = data.iloc[:, j]
+        data.iloc[:, j] = replace(datum)
+    return data
 
 
 def impute_chunked(
-    snps: pd.DataFrame, chunks: int, replace: Callable[[pd.Series], Any] = mode_genotype
+    data: pd.DataFrame, chunks: int, replace: Callable[[pd.Series], Any] = mode_genotype
 ) -> pd.DataFrame:
     """
     Impute a large dataset by imputing chunks of columns.
     """
-    column_index = snps.columns.tolist()
-    chunk_idx = np.array_split(np.arange(snps.shape[1]), chunks)
-    collected = [impute(snps.iloc[:, idx], replace) for idx in chunk_idx]
-    snps_imputed = pd.concat(collected, axis=1).reindex(columns=column_index)
-    snps_imputed.columns = column_index
-    return snps_imputed
+    columns = data.columns.tolist()
+    chunk_idx = np.array_split(np.arange(data.shape[1]), chunks)
+    collected = [impute(data.iloc[:, idx], replace) for idx in chunk_idx]
+    imputed = pd.concat(collected, axis=1).reindex(columns=columns)
+    imputed.columns = columns
+    return imputed
 
 
 # ## Mapping
 
 
 def positional_mapping(
-    snp_info: pd.DataFrame, gene_info: pd.DataFrame, neighborhood: int
+    unmapped_info: pd.DataFrame, mapped_info: pd.DataFrame, neighborhood: int
 ):
     """
     Map SNPs to genes according to the genomic location.
 
-    :param snp_info: a pd data.frame of size [n_snps, 2]
+    :param unmapped_info: a pd data.frame of size [n_snps, 2]
            where the 2 columns are the chromosome and position of every SNP.
-    :param gene_info: a pd data.frame of size [n_genes, 3]
+    :param mapped_info: a pd data.frame of size [n_genes, 3]
            where the 3 columns are the chromosome, start location and end
            location of every gene.
     :param neighborhood: an integer indicating how many base pairs around
@@ -159,16 +160,16 @@ def positional_mapping(
     mapping = {}
 
     # loop over all genes
-    for i in range(gene_info.shape[0]):
+    for i in range(mapped_info.shape[0]):
         # SNP is assigned to a gene if it's located in between the lower and upper bounds
-        lowbound = gene_info.iloc[i, 1] - neighborhood
-        upbound = gene_info.iloc[i, 2] + neighborhood
+        lowbound = mapped_info.iloc[i, 1] - neighborhood
+        upbound = mapped_info.iloc[i, 2] + neighborhood
         idx = np.where(
             np.all(
                 (
-                    snp_info.to_numpy()[:, 0] == gene_info.to_numpy()[i, 0],
-                    snp_info.to_numpy()[:, 1] >= lowbound,
-                    snp_info.to_numpy()[:, 1] <= upbound,
+                    unmapped_info.to_numpy()[:, 0] == mapped_info.to_numpy()[i, 0],
+                    unmapped_info.to_numpy()[:, 1] >= lowbound,
+                    unmapped_info.to_numpy()[:, 1] <= upbound,
                 ),
                 axis=0,
             )
@@ -177,9 +178,9 @@ def positional_mapping(
         if len(idx) == 0:  # skip genes if no SNP assigned
             continue
         if len(idx) == 1:  # in case only 1 SNP is mapped to the gene
-            mapping[gene_info.index.values[i]] = [snp_info.index.values[idx]]
+            mapping[mapped_info.index.values[i]] = [unmapped_info.index.values[idx]]
         else:  # in case multiple SNPs are mapped to the gene
-            mapping[gene_info.index.values[i]] = snp_info.index.values[idx]
+            mapping[mapped_info.index.values[i]] = unmapped_info.index.values[idx]
 
     return mapping
 
@@ -187,39 +188,42 @@ def positional_mapping(
 # ## Interactions
 
 
-def snp_interaction(
-    interact: pd.DataFrame, gene_info: pd.DataFrame, snp_info: pd.DataFrame
-) -> Tuple[List[GeneInteraction], pd.DataFrame]:
+def map_interaction(
+    interact: pd.DataFrame,
+    mapped_info: pd.DataFrame,
+    unmapped_info: pd.DataFrame,
+    neighborhood: int = 2000,
+) -> Tuple[List[MappedInteraction], pd.DataFrame]:
     """
     Select the genes.
 
     :param interact: a pd data.frame of size [n_interactions, 2]
            where the 2 columns are the 2 gene IDs of the interaction.
-    :param gene_info: a pd data.frame of size [n_genes, 3]
+    :param mapped_info: a pd data.frame of size [n_genes, 3]
            where the 3 columns are the chromosome, start location and
            end location of every gene.
-    :param snp_info: a pd data.frame of size [n_snps, 2]
+    :param unmapped_info: a pd data.frame of size [n_snps, 2]
            where the 2 columns are the chromosome and position
            of every SNP.
     :return:
     """
 
-    mapping = positional_mapping(snp_info, gene_info, 2000)
+    mapping = positional_mapping(unmapped_info, mapped_info, neighborhood)
 
-    interact_gene = []
-    interact_snp = []
-    for gene_id_1, gene_id_2 in interact.to_records(index=False):
-        if gene_id_1 in mapping and gene_id_2 in mapping:
-            interact_gene.append((gene_id_1, gene_id_2))
-            interact_snp.append((mapping[gene_id_1], mapping[gene_id_2]))
+    interact_mapped = []
+    interact_unmapped = []
+    for feature_1, feature_2 in interact.to_records(index=False):
+        if feature_1 in mapping and feature_2 in mapping:
+            interact_mapped.append((feature_1, feature_2))
+            interact_unmapped.append((mapping[feature_1], mapping[feature_2]))
 
     return (
-        interact_snp,
-        pd.DataFrame(interact_gene, columns=["gene_id_1", "gene_id_2"]),
+        interact_unmapped,
+        pd.DataFrame(interact_mapped, columns=["gene_id_1", "gene_id_2"]),
     )
 
 
-# ## Metrics for SNP array
+# ## Metrics for unmapped discrete data
 
 
 def __pearson_metric(first, second):
@@ -313,8 +317,8 @@ def __identity(value: _FloatLike_co) -> _FloatLike_co:
 
 def isn(
     data,
-    interact_snp,
-    interact_gene,
+    interact_unmapped,
+    interact_mapped,
     metric: Metric,
     pool: Optional[Pooling] = None,
 ):
@@ -348,10 +352,10 @@ def isn(
     else:
         pooling_fn = pool
 
-    if interact_snp is not None:
-        interact = interact_snp
+    if interact_unmapped is not None:
+        interact = interact_unmapped
     else:
-        interact = interact_gene.values
+        interact = interact_mapped.values
 
     assert np.all(snp.isin(data.columns) for snp in interact)  # type: ignore[call-overload]
     assert metric_fn is not None
@@ -361,5 +365,5 @@ def isn(
 
     return pd.DataFrame(
         np.column_stack([isn_edge(*assoc) for assoc in interact]),
-        columns=[a + "_" + b for a, b in interact_gene.values],
+        columns=[a + "_" + b for a, b in interact_mapped.values],
     )
