@@ -355,7 +355,12 @@ def test_on_genes_pearson():
     )
     interact = pd.DataFrame([("gene_vcbc", "gene_pipx")], columns=["1", "2"])
     assert_frame_equal(
-        isn(gene_data, interact_snp=None, interact_gene=interact, metric="pearson"),
+        isn(
+            gene_data,
+            interact_unmapped=None,
+            interact_mapped=interact,
+            metric="pearson",
+        ),
         pd.DataFrame(
             [
                 (-6.509092,),
@@ -376,7 +381,12 @@ def test_on_genes_spearman():
     )
     interact = pd.DataFrame([("gene_vcbc", "gene_pipx")], columns=["1", "2"])
     assert_frame_equal(
-        isn(gene_data, interact_snp=None, interact_gene=interact, metric="spearman"),
+        isn(
+            gene_data,
+            interact_unmapped=None,
+            interact_mapped=interact,
+            metric="spearman",
+        ),
         pd.DataFrame(
             [
                 (-3.7,),
@@ -397,7 +407,7 @@ def test_on_genes_dot():
     )
     interact = pd.DataFrame([("gene_vcbc", "gene_pipx")], columns=["1", "2"])
     assert_frame_equal(
-        isn(gene_data, interact_snp=None, interact_gene=interact, metric="dot"),
+        isn(gene_data, interact_unmapped=None, interact_mapped=interact, metric="dot"),
         pd.DataFrame(
             [
                 (-23030.4708,),
