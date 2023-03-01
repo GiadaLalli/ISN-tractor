@@ -369,12 +369,22 @@ def sparse_isn(
     )
 
 
+def __dense_metric(method: str):
+    def metric(data: pd.DataFrame):
+        return data.corr(method=method)  # type: ignore[arg-type]
+
+    return metric
+
+
 def dense_isn(data: pd.DataFrame, metric: Metric):
+    """
+    Network computation based on the Lioness algorithm
+    """
     num_samples = data.shape[1]
     samples = data.columns
 
     if isinstance(metric, str):
-        metric_fn = lambda the_data: (the_data).corr(method=metric)
+        metric_fn = __dense_metric(metric)
     else:
         metric_fn = metric  # type: ignore[assignment]
     net = metric_fn(data.T)
@@ -389,9 +399,9 @@ def dense_isn(data: pd.DataFrame, metric: Metric):
     dense.iloc[:, 1] = np.tile(net.columns.values, data.shape[0])
 
     for i in range(num_samples):
-        ss = metric_fn(
+        values = metric_fn(
             pd.DataFrame(np.delete(data.T.to_numpy(), i, 0))
         ).values.flatten()
-        dense.iloc[:, i + 2] = num_samples * (agg - ss) + ss
+        dense.iloc[:, i + 2] = num_samples * (agg - values) + values
 
     return dense
