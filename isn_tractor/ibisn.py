@@ -11,16 +11,25 @@ from scipy.stats import pearsonr, spearmanr
 from sklearn.metrics import normalized_mutual_info_score as mutual_info
 import torch as t
 
+MetricFn = Callable[
+    [t.Tensor, t.Tensor],
+    Union[_ArrayLikeFloat_co, _FloatLike_co],
+]
+
+PoolingFn = Callable[
+    [Union[_ArrayLikeFloat_co, _FloatLike_co]],
+    _FloatLike_co,
+]
 
 Metric = Union[
     Literal["pearson"],
     Literal["spearman"],
     Literal["mutual_info"],
-    Literal["LD"],
     Literal["dot"],
+    MetricFn,
 ]
 
-Pooling = Union[Literal["max"], Literal["avg"], Literal["average"]]
+Pooling = Union[Literal["max"], Literal["avg"], Literal["average"], PoolingFn]
 
 GeneInteraction = Tuple[List[str], List[str]]
 
@@ -243,103 +252,40 @@ def __dot_metric(first, second):
 # ## ISNs computation for SNP array
 
 
-def __isn_calculation_per_edge(
-    snp1_list,
-    snp2_list,
-    metric,
-    pool: Callable[
-        [Union[_ArrayLikeFloat_co, _FloatLike_co]],
-        _FloatLike_co,
-    ],
+def __isn_edge(
+    metric: MetricFn,
+    pool: PoolingFn,
 ):
     """
     Internal
     """
-    glob = pool(metric(snp1_list, snp2_list))
-    result = []
 
-    for indx in range(snp1_list.shape[0]):
-        snp1_loo = np.delete(snp1_list, indx, axis=0)
-        snp2_loo = np.delete(snp2_list, indx, axis=0)
-        avg = pool(metric(snp1_loo, snp2_loo))
-        # type: ignore[call-overload,operator]
-        result.append(snp1_list.shape[0] * (glob - avg) + avg)
+    def isn_edge_implementation(first: t.Tensor, second: t.Tensor):
+        rows = first.shape[0]
+        glob = pool(metric(first, second))
+        result = []
 
-    return result
+        for indx in range(first.shape[0]):
+            loo_1 = t.tensor(np.delete(first, indx, axis=0))
+            loo_2 = t.tensor(np.delete(second, indx, axis=0))
+            avg = pool(metric(loo_1, loo_2))
+            result.append(rows * (glob - avg) + avg)  # type: ignore[call-overload,operator]
+
+        return np.array(result, dtype=np.float64)
+
+    return isn_edge_implementation
 
 
 def __make_array(*xs):
     return np.array(xs, dtype=object)
 
 
-def __identity(value: _FloatLike_co) -> _FloatLike_co:
-    return value
+def __make_edge_fn(data, metric_fn: MetricFn, pool_fn: PoolingFn):
+    edge = __isn_edge(metric_fn, pool_fn)
 
-
-def isn(
-    data,
-    interact_snp,
-    interact_gene,
-    metric: Union[
-        Literal["pearson"],
-        Literal["spearman"],
-        Literal["mutual_info"],
-        Literal["dot"],
-        Callable[
-            [t.Tensor, t.Tensor],
-            Union[_ArrayLikeFloat_co, _FloatLike_co],
-        ],
-    ],
-    pool: Optional[
-        Union[
-            Literal["max"],
-            Literal["avg"],
-            Literal["average"],
-            Callable[[_ArrayLikeFloat_co], _FloatLike_co],
-        ]
-    ] = None,
-):
-    """
-    Network computation guided by weighted edges given interaction relevance.
-    """
-    if metric not in ["pearson", "spearman", "mutual_info", "dot"]:
-        raise ValueError(f'"{metric}" is not a valid metric')
-    if pool is not None and pool not in ["max", "avg", "average"]:
-        raise ValueError(f'"{pool}" is not a valid pooling method')
-
-    if isinstance(metric, str):
-        metric_fn = {
-            "pearson": __pearson_metric,
-            "spearman": __spearman_metric,
-            "mutual_info": __mutual_info_metric,
-            "dot": __dot_metric,
-        }.get(metric)
-    else:
-        metric_fn = metric
-
-    if pool is None:
-        pooling_fn = __identity
-    elif isinstance(pool, str):
-        pooling_fn = {
-            "max": np.max,
-            "avg": np.mean,
-            "average": np.mean,
-        }.get(pool)
-    else:
-        pooling_fn = pool
-
-    if interact_snp is not None:
-        interact = interact_snp
-    else:
-        interact = interact_gene.values
-    network = np.zeros((data.shape[0], len(interact)))
-    assert np.all(snp.isin(data.columns) for snp in interact)
-    assert metric_fn is not None
-    assert pooling_fn is not None
-
-    for index, (assoc_gene_1, assoc_gene_2) in enumerate(interact):
-        element_one = __make_array(assoc_gene_1)
-        element_two = __make_array(assoc_gene_2)
+    def make_edge(assoc_1, assoc_2):
+        element_one = __make_array(assoc_1)
+        element_two = __make_array(assoc_2)
 
         intersection_1 = (
             data[element_one[0]]
@@ -353,11 +299,67 @@ def isn(
             else data[data.columns.intersection(element_two)]
         )
 
-        network[:, index] = __isn_calculation_per_edge(
+        return edge(
             t.tensor(intersection_1.values),
             t.tensor(intersection_2.values),
-            metric_fn,
-            pooling_fn,
         )
 
-    return pd.DataFrame(network, columns=[a + "_" + b for a, b in interact_gene.values])
+    return make_edge
+
+
+def __identity(value: _FloatLike_co) -> _FloatLike_co:
+    return value
+
+
+def isn(
+    data,
+    interact_snp,
+    interact_gene,
+    metric: Metric,
+    pool: Optional[Pooling] = None,
+):
+    """
+    Network computation guided by weighted edges given interaction relevance.
+    """
+    if metric not in ["pearson", "spearman", "mutual_info", "dot"]:
+        raise ValueError(f'"{metric}" is not a valid metric')
+
+    if isinstance(metric, str):
+        metric_fn = {
+            "pearson": __pearson_metric,
+            "spearman": __spearman_metric,
+            "mutual_info": __mutual_info_metric,
+            "dot": __dot_metric,
+        }.get(metric)
+    else:
+        metric_fn = metric
+
+    if pool is None:
+        pooling_fn: PoolingFn = __identity  # type: ignore[assignment]
+    elif isinstance(pool, str):
+        if (
+            pooling_fn := {  # type: ignore[assignment]
+                "max": np.max,
+                "avg": np.mean,
+                "average": np.mean,
+            }.get(pool)
+        ) is None:
+            raise ValueError(f'"{pool}" is not a valid pooling method')
+    else:
+        pooling_fn = pool
+
+    if interact_snp is not None:
+        interact = interact_snp
+    else:
+        interact = interact_gene.values
+
+    assert np.all(snp.isin(data.columns) for snp in interact)  # type: ignore[call-overload]
+    assert metric_fn is not None
+    assert pooling_fn is not None
+
+    isn_edge = __make_edge_fn(data, metric_fn, pooling_fn)
+
+    return pd.DataFrame(
+        np.column_stack([isn_edge(*assoc) for assoc in interact]),
+        columns=[a + "_" + b for a, b in interact_gene.values],
+    )

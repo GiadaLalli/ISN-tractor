@@ -10,13 +10,11 @@ def test_empty_inputs():
     snp_data = pd.DataFrame()
     interact_snp = []
     interact_gene = pd.DataFrame()
-    assert_frame_equal(
+    with pytest.raises(ValueError):
         isn(snp_data, interact_snp, interact_gene, "pearson", "avg"),
-        pd.DataFrame(index=pd.RangeIndex(0, 0, 1)),
-    )
 
 
-def test_minimal_pearson_avg():
+def test_snp_pearson_avg():
     snp_data = pd.DataFrame(
         [(1, 0), (1, 2), (2, 1), (0, 0), (1, 2)], columns=["snp_jcstj", "snp_dvxkv"]
     )
@@ -44,7 +42,7 @@ def test_minimal_pearson_avg():
     )
 
 
-def test_minimal_pearson_max():
+def test_snp_pearson_max():
     snp_data = pd.DataFrame(
         [(1, 0), (1, 2), (2, 1), (0, 0), (1, 2)], columns=["snp_jcstj", "snp_dvxkv"]
     )
@@ -72,7 +70,7 @@ def test_minimal_pearson_max():
     )
 
 
-def test_minimal_spearman_avg():
+def test_snp_spearman_avg():
     snp_data = pd.DataFrame(
         [(1, 0), (1, 2), (2, 1), (0, 0), (1, 2)], columns=["snp_jcstj", "snp_dvxkv"]
     )
@@ -100,7 +98,7 @@ def test_minimal_spearman_avg():
     )
 
 
-def test_minimal_spearman_max():
+def test_snp_spearman_max():
     snp_data = pd.DataFrame(
         [(1, 0), (1, 2), (2, 1), (0, 0), (1, 2)], columns=["snp_jcstj", "snp_dvxkv"]
     )
@@ -128,7 +126,7 @@ def test_minimal_spearman_max():
     )
 
 
-def test_minimal_mutual_info_avg():
+def test_snp_mutual_info_avg():
     snp_data = pd.DataFrame(
         [(1, 0), (1, 2), (2, 1), (0, 0), (1, 2)], columns=["snp_jcstj", "snp_dvxkv"]
     )
@@ -156,7 +154,7 @@ def test_minimal_mutual_info_avg():
     )
 
 
-def test_minimal_mutual_info_max():
+def test_snp_mutual_info_max():
     snp_data = pd.DataFrame(
         [(1, 0), (1, 2), (2, 1), (0, 0), (1, 2)], columns=["snp_jcstj", "snp_dvxkv"]
     )
@@ -184,7 +182,7 @@ def test_minimal_mutual_info_max():
     )
 
 
-def test_minimal_dot_avg():
+def test_snp_dot_avg():
     snp_data = pd.DataFrame(
         [(1, 0), (1, 2), (2, 1), (0, 0), (1, 2)], columns=["snp_jcstj", "snp_dvxkv"]
     )
@@ -212,7 +210,7 @@ def test_minimal_dot_avg():
     )
 
 
-def test_minimal_dot_max():
+def test_snp_dot_max():
     snp_data = pd.DataFrame(
         [(1, 0), (1, 2), (2, 1), (0, 0), (1, 2)], columns=["snp_jcstj", "snp_dvxkv"]
     )
@@ -236,6 +234,62 @@ def test_minimal_dot_max():
                 (21.0,),
             ],
             columns=["gene_vcbc_gene_pipx"],
+        ),
+    )
+
+
+def test_snp_larger():
+    snp_data = pd.DataFrame(
+        [(1, 0, 1, 1), (1, 2, 2, 0), (2, 1, 0, 2), (0, 0, 1, 0), (1, 2, 0, 0)],
+        columns=["snp_a", "snp_b", "snp_c", "snp_d"],
+    )
+    interact_snp = [
+        (
+            array(["snp_a", "snp_b", "snp_c", "snp_d"], dtype=object),
+            array(["snp_a", "snp_b", "snp_c", "snp_d"], dtype=object),
+        ),
+        (
+            array(["snp_a", "snp_b", "snp_c", "snp_d"], dtype=object),
+            array(["snp_a", "snp_b", "snp_c", "snp_d"], dtype=object),
+        ),
+        (
+            array(["snp_a", "snp_b", "snp_c", "snp_d"], dtype=object),
+            array(["snp_a", "snp_b", "snp_c", "snp_d"], dtype=object),
+        ),
+        (
+            array(["snp_a", "snp_b", "snp_c", "snp_d"], dtype=object),
+            array(["snp_a", "snp_b", "snp_c", "snp_d"], dtype=object),
+        ),
+    ]
+    interact_gene = pd.DataFrame(
+        [
+            ("gene_a", "gene_b"),
+            ("gene_a", "gene_c"),
+            ("gene_b", "gene_c"),
+            ("gene_c", "gene_d"),
+        ],
+        columns=["gene_id_1", "gene_id_2"],
+    )
+
+    computed = isn(snp_data, interact_snp, interact_gene, "pearson", "average")
+    print(computed, flush=True)
+
+    assert_frame_equal(
+        computed,
+        pd.DataFrame(
+            [
+                (0.1098762, 0.1098762, 0.1098762, 0.1098762),
+                (0.847243, 0.8472431, 0.8472431, 0.8472431),
+                (-0.0930169, -0.0930169, -0.0930169, -0.0930169),
+                (0.6876522, 0.6876522, 0.6876522, 0.6876522),
+                (0.0056454, 0.0056454, 0.0056454, 0.0056454),
+            ],
+            columns=[
+                "gene_a_gene_b",
+                "gene_a_gene_c",
+                "gene_b_gene_c",
+                "gene_c_gene_d",
+            ],
         ),
     )
 
