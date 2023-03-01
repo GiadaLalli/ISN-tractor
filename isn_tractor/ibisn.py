@@ -367,3 +367,31 @@ def isn(
         np.column_stack([isn_edge(*assoc) for assoc in interact]),
         columns=[a + "_" + b for a, b in interact_mapped.values],
     )
+
+
+def dense_isn(data: pd.DataFrame, metric: Metric):
+    num_samples = data.shape[1]
+    samples = data.columns
+
+    if isinstance(metric, str):
+        metric_fn = lambda the_data: (the_data).corr(method=metric)
+    else:
+        metric_fn = metric  # type: ignore[assignment]
+    net = metric_fn(data.T)
+    agg = net.to_numpy().flatten()
+
+    dense = pd.DataFrame(
+        np.nan,
+        index=np.arange(data.shape[0] * data.shape[0]),
+        columns=["reg", "tar"] + list(samples),
+    ).astype(object)
+    dense.iloc[:, 0] = np.repeat(net.columns.values, net.columns.size)
+    dense.iloc[:, 1] = np.tile(net.columns.values, data.shape[0])
+
+    for i in range(num_samples):
+        ss = metric_fn(
+            pd.DataFrame(np.delete(data.T.to_numpy(), i, 0))
+        ).values.flatten()
+        dense.iloc[:, i + 2] = num_samples * (agg - ss) + ss
+
+    return dense
