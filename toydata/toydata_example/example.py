@@ -28,7 +28,7 @@ m_df = dataframe((200, 100), ["mapped", "continuous"])
 
 
 def interactions(n_rows):
-    features = [f"mapped_feature_{i+1}" for i in range(n_rows)]
+    features = [f"mapped_feature_{i}" for i in range(n_rows)]
     interact = []
     for i in range(len(features)):
         other_features = features[:i] + features[i+1:]
