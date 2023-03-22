@@ -299,3 +299,244 @@ def compute_isn(
 
     isn = pd.DataFrame(isn, columns=[a + "_" + b for a, b in interact_gene.values])
     return isn
+
+#modified __make_edge_fn to support the cuda parameter and use CUDA if requested 
+def __make_edge_fn(data, metric_fn: MetricFn, pool_fn: PoolingFn, cuda: Optional[bool] = False):
+    edge = __isn_edge(metric_fn, pool_fn)
+
+    def make_edge(assoc_1, assoc_2):
+        element_one = __make_array(assoc_1)
+        element_two = __make_array(assoc_2)
+
+        intersection_1 = (
+            data[element_one[0]]
+            if len(element_one) == 1
+            else data[data.columns.intersection(element_one)]
+        )
+
+        intersection_2 = (
+            data[element_two[0]]
+            if len(element_two) == 1
+            else data[data.columns.intersection(element_two)]
+        )
+
+        x = intersection_1.values
+        y = intersection_2.values
+        
+        if cuda:
+            device = 'cuda' if t.cuda.is_available() else 'cpu'
+            x = t.from_numpy(x).to(device)
+            y = t.from_numpy(y).to(device)
+
+        return edge(x, y)
+
+    return make_edge
+
+
+
+#function for computation of sparse ISNs with CUDA parameter
+def sparse_isn(
+    data,
+    interact_unmapped,
+    interact_mapped,
+    metric: Metric,
+    pool: Optional[Pooling] = None,
+    cuda: Optional[bool] = False
+):
+    """
+    Network computation guided by weighted edges given interaction relevance.
+    """
+    if metric not in ["pearson", "spearman", "mutual_info", "dot"]:
+        raise ValueError(f'"{metric}" is not a valid metric')
+
+    if isinstance(metric, str):
+        metric_fn = {
+            "pearson": __pearson_metric,
+            "spearman": __spearman_metric,
+            "mutual_info": __mutual_info_metric,
+            "dot": __dot_metric,
+        }.get(metric)
+    else:
+        metric_fn = metric
+
+    if pool is None:
+        pooling_fn: PoolingFn = __identity  # type: ignore[assignment]
+    elif isinstance(pool, str):
+        if (
+            pooling_fn := {  # type: ignore[assignment]
+                "max": np.max,
+                "avg": np.mean,
+                "average": np.mean,
+            }.get(pool)
+        ) is None:
+            raise ValueError(f'"{pool}" is not a valid pooling method')
+    else:
+        pooling_fn = pool
+
+    if interact_unmapped is not None:
+        interact = interact_unmapped
+    else:
+        interact = interact_mapped.values
+
+    assert np.all(snp.isin(data.columns) for snp in interact)  # type: ignore[call-overload]
+    assert metric_fn is not None
+    assert pooling_fn is not None
+
+    isn_edge = __make_edge_fn(data, metric_fn, pooling_fn, cuda=cuda)
+
+    return pd.DataFrame(
+        np.column_stack([isn_edge(*assoc) for assoc in interact]),
+        columns=[a + "_" + b for a, b in interact_mapped.values],
+    )
+
+#function for computation od dense ISNs with CUDA parameter
+def dense_isn(data: pd.DataFrame, metric: Metric, cuda: Optional[bool] = False):
+    """
+    Network computation based on the Lioness algorithm
+    """
+    num_samples = data.shape[1]
+    samples = data.columns
+
+    if isinstance(metric, str):
+        metric_fn = __dense_metric(metric)
+    else:
+        metric_fn = metric  # type: ignore[assignment]
+    net = metric_fn(data.T)
+    agg = net.to_numpy().flatten()
+
+    dense = pd.DataFrame(
+        np.nan,
+        index=np.arange(data.shape[0] * data.shape[0]),
+        columns=["reg", "tar"] + list(samples),
+    ).astype(object)
+    dense.iloc[:, 0] = np.repeat(net.columns.values, net.columns.size)
+    dense.iloc[:, 1] = np.tile(net.columns.values, data.shape[0])
+
+    if cuda:
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    else:
+        device = torch.device("cpu")
+
+    for i in range(num_samples):
+        if cuda:
+            values = metric_fn(
+                torch.tensor(np.delete(data.T.to_numpy(), i, 0)).to(device)
+            ).cpu().numpy().flatten()
+        else:
+            values = metric_fn(
+                pd.DataFrame(np.delete(data.T.to_numpy(), i, 0))
+            ).values.flatten()
+        dense.iloc[:, i + 2] = num_samples * (agg - values) + values
+
+    return dense
+
+'''
+NEW METRICS
+1) Torch version of Pearson
+2) TorchMetrics version of Pearson
+3) Torch-based version of Spearman
+4) TorchMetrics version of Spearman
+5) Torch-base version of LD R2
+6) TorchMetrics version of LD R2
+7) Torch-based version of Norm Mut Info
+8) Torch-based version of Dot Prod
+'''
+import torchmetrics
+from torchmetrics import SpearmanCorrCoef, PearsonCorrCoef, R2Score
+
+def pearson_metric_t(first, second):
+        
+    if (first.dim(), second.dim()) == (1, 1):
+        return t.corrcoef(t.tensor(first,second))[0,1]
+
+    combined = t.cat([first, second], axis=1)
+    return t.corrcoef(combined.T)[: first.shape[1] - 1, first.shape[1] :]
+
+def pearson_corr_tm(first: t.Tensor, second: t.Tensor) -> float:
+        
+    # Reshape both tensors to 1D
+    first_flat = first.reshape(-1)
+    second_flat = second.reshape(-1)
+
+    # Pad the smaller tensor with zeros if needed to match the length of the larger tensor
+    if len(first_flat) > len(second_flat):
+        second_flat = t.cat([second_flat, t.zeros(len(first_flat) - len(second_flat))])
+    else:
+        first_flat = t.cat([first_flat, t.zeros(len(second_flat) - len(first_flat))])
+
+    # Compute the spearman correlation score
+    pearson = PearsonCorrCoef()
+    score = pearson(first_flat, second_flat)
+    return score.item()
+
+def spearman_metric_t(first, second):
+        
+    if (first.dim(), second.dim()) == (1, 1):
+        X = t.argsort(first)
+        Y = t.argsort(second)
+        combined = t.cat([X, Y], axis=1)
+        return t.corrcoef(combined.T)[0,1]
+
+    X = t.argsort(first, dim=0)   
+    Y = t.argsort(second, dim=0)
+    combined = t.cat([X, Y], axis=1)
+    return t.corrcoef(combined.T)[: first.shape[1] - 1, first.shape[1] :]
+
+def spearman_score_tm(first: t.Tensor, second: t.Tensor) -> float:
+
+    # Reshape both tensors to 1D
+    first_flat = first.reshape(-1)
+    second_flat = second.reshape(-1)
+
+    # Pad the smaller tensor with zeros if needed to match the length of the larger tensor
+    if len(first_flat) > len(second_flat):
+        second_flat = t.cat([second_flat, t.zeros(len(first_flat) - len(second_flat))])
+    else:
+        first_flat = t.cat([first_flat, t.zeros(len(second_flat) - len(first_flat))])
+
+    # Compute the spearman correlation score
+    spearman = SpearmanCorrCoef()
+    score = spearman(first_flat, second_flat)
+    return score.item()
+
+def linkdis_metric_t(first, second):
+        
+    first = t.tensor(first)
+    second = t.tensor(second)
+    scores = allel.rogers_huff_r_between(first.T, second.T)
+    scores = t.square(t.from_numpy(scores))
+    score = t.mean(scores)
+    return score.item()
+
+def r2_score_tm(first: t.Tensor, second: t.Tensor) -> float:
+        
+    # Reshape both tensors to 1D
+    first_flat = first.reshape(-1)
+    second_flat = second.reshape(-1)
+
+    # Pad the smaller tensor with zeros if needed to match the length of the larger tensor
+    if len(first_flat) > len(second_flat):
+        second_flat = t.cat([second_flat, t.zeros(len(first_flat) - len(second_flat))])
+    else:
+        first_flat = t.cat([first_flat, t.zeros(len(second_flat) - len(first_flat))])
+
+    # Compute the spearman correlation score
+    r2score = R2Score()
+    score = r2score(first_flat, second_flat)
+    return score.item()
+
+def mutualinfo_metric_t(first, second):
+        
+    if (first.dim(), second.dim()) == (1, 1):
+        return mutual_info(first, second)
+
+    scores = t.zeros((first.shape[1], second.shape[1]))
+    for i in range(first.shape[1]):
+        for j in range(second.shape[1]):
+            scores[i, j] = mutual_info(first[:, i], second[:, j])
+    return scores.numpy()
+
+def dot_metric_t(first, second):
+        
+    return t.matmul(first.permute(*t.arange(first.ndim - 1, -1, -1)), second).numpy()
+
