@@ -7,8 +7,6 @@ from typing import Union, Literal, Tuple, List, Any, Callable, Optional
 import pandas as pd
 import numpy as np
 from numpy._typing import _ArrayLikeFloat_co, _FloatLike_co
-from scipy.stats import pearsonr, spearmanr
-from sklearn.metrics import normalized_mutual_info_score as mutual_info
 import torch as t
 
 MetricFn = Callable[
@@ -24,7 +22,6 @@ PoolingFn = Callable[
 Metric = Union[
     Literal["pearson"],
     Literal["spearman"],
-    Literal["mutual_info"],
     Literal["dot"],
     MetricFn,
 ]
@@ -227,26 +224,24 @@ def map_interaction(
 
 
 def __pearson_metric(first, second):
-    if (first.dim(), second.dim()) == (1, 1):
-        return pearsonr(first, second).statistic
-
-    combined = np.concatenate([first, second], axis=1)
-    return np.corrcoef(combined.T)[: first.shape[1] - 1, first.shape[1] :]
+    min_rows = min(first.shape[0], second.shape[0])
+    first = first[:min_rows]
+    second = second[:min_rows]
+    combined = t.cat([first, second], dim=1)
+    return t.corrcoef(combined.T)[: first.shape[1] - 1, first.shape[1] :]
 
 
 def __spearman_metric(first, second):
-    return spearmanr(first, second).statistic
-
-
-def __mutual_info_metric(first, second):
     if (first.dim(), second.dim()) == (1, 1):
-        return mutual_info(first, second)
+        first_sorted = t.argsort(first)
+        second_sorted = t.argsort(second)
+        combined = t.cat((first_sorted, second_sorted), dim=1)
+        return t.corrcoef(combined.T)[0, 1]
 
-    scores = np.zeros((first.shape[1], second.shape[1]))
-    for i in range(first.shape[1]):
-        for j in range(second.shape[1]):
-            scores[i, j] = mutual_info(first[:, i], second[:, j])
-    return scores
+    first_sorted = t.argsort(first, dim=0)
+    second_sorted = t.argsort(second, dim=0)
+    combined = t.cat((first_sorted, second_sorted), dim=1)
+    return t.corrcoef(combined.T)[: first.shape[1] - 1, first.shape[1] :]
 
 
 def __dot_metric(first, second):
@@ -340,7 +335,6 @@ def sparse_isn(
             metric_fn := {
                 "pearson": __pearson_metric,
                 "spearman": __spearman_metric,
-                "mutual_info": __mutual_info_metric,
                 "dot": __dot_metric,
             }.get(metric)
         ) is None:

@@ -1,9 +1,21 @@
 import pytest
 from isn_tractor.ibisn import sparse_isn
 
-from numpy import array
+from numpy import array, zeros
 import pandas as pd
 from pandas.testing import assert_frame_equal
+from sklearn.metrics import normalized_mutual_info_score as mutual_info
+
+
+def my_mutual_info_metric(first, second):
+    if (first.dim(), second.dim()) == (1, 1):
+        return mutual_info(first, second)
+
+    scores = zeros((first.shape[1], second.shape[1]))
+    for i in range(first.shape[1]):
+        for j in range(second.shape[1]):
+            scores[i, j] = mutual_info(first[:, i], second[:, j])
+    return scores
 
 
 def test_empty_inputs():
@@ -140,7 +152,7 @@ def test_snp_mutual_info_avg():
         [("gene_vcbc", "gene_pipx")], columns=["gene_id_1", "gene_id_2"]
     )
     assert_frame_equal(
-        sparse_isn(snp_data, interact_snp, interact_gene, "mutual_info", "avg"),
+        sparse_isn(snp_data, interact_snp, interact_gene, my_mutual_info_metric, "avg"),
         pd.DataFrame(
             [
                 (0.178174,),
@@ -168,7 +180,7 @@ def test_snp_mutual_info_max():
         [("gene_vcbc", "gene_pipx")], columns=["gene_id_1", "gene_id_2"]
     )
     assert_frame_equal(
-        sparse_isn(snp_data, interact_snp, interact_gene, "mutual_info", "max"),
+        sparse_isn(snp_data, interact_snp, interact_gene, my_mutual_info_metric, "max"),
         pd.DataFrame(
             [
                 (1.0,),
