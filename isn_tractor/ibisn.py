@@ -227,7 +227,7 @@ def __pearson_metric(first, second):
     min_rows = min(first.shape[0], second.shape[0])
     first = first[:min_rows]
     second = second[:min_rows]
-    combined = t.cat([first, second], dim=1)
+    combined = t.cat([first, second], dim=1)  # TODO: Should this be t.stack()
     return t.corrcoef(combined.T)[: first.shape[1] - 1, first.shape[1] :]
 
 
@@ -235,12 +235,16 @@ def __spearman_metric(first, second):
     if (first.dim(), second.dim()) == (1, 1):
         first_sorted = t.argsort(first)
         second_sorted = t.argsort(second)
-        combined = t.cat((first_sorted, second_sorted), dim=1)
-        return t.corrcoef(combined.T)[0, 1]
+        combined = t.stack(
+            (first_sorted, second_sorted)
+        )  # TODO: This changed from t.cat()
+        return t.corrcoef(combined)[0, 1]
 
     first_sorted = t.argsort(first, dim=0)
     second_sorted = t.argsort(second, dim=0)
-    combined = t.cat((first_sorted, second_sorted), dim=1)
+    combined = t.cat(
+        (first_sorted, second_sorted), dim=1
+    )  # TODO: Should this be t.stack()
     return t.corrcoef(combined.T)[: first.shape[1] - 1, first.shape[1] :]
 
 

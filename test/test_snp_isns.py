@@ -412,6 +412,51 @@ def test_on_genes_spearman():
     )
 
 
+def test_on_genes_spearman_stack_different_dimensions_bug():
+    gene_data = pd.DataFrame(
+        [
+            (-100, 50, 4),
+            (11, 20, 56.34),
+            (22.1, 12.6, 234.54),
+            (0.1, 0.5, 0.45),
+            (51.76, 28.42, 45.0),
+        ],
+        columns=["gene_vcbc", "gene_pipx", "gene_james"],
+    )
+    interact = pd.DataFrame(
+        [
+            ("gene_vcbc", "gene_pipx"),
+            ("gene_vcbc", "gene_james"),
+            ("gene_james", "gene_pipx"),
+            ("gene_james", "gene_james"),
+        ],
+        columns=["1", "2"],
+    )
+    assert_frame_equal(
+        sparse_isn(
+            gene_data,
+            interact_unmapped=None,
+            interact_mapped=interact,
+            metric="spearman",
+        ),
+        pd.DataFrame(
+            [
+                (-5.7, -1.4, -2.3, 1.0),
+                (0.7, -0.6, -4.7, 1.0),
+                (0.7, -0.6, -4.7, 1.0),
+                (-0.9, -4.6, 0.9, 1.0),
+                (-0.9, 0.2, -2.3, 1.0),
+            ],
+            columns=[
+                "gene_vcbc_gene_pipx",
+                "gene_vcbc_gene_james",
+                "gene_james_gene_pipx",
+                "gene_james_gene_james",
+            ],
+        ),
+    )
+
+
 def test_on_genes_dot():
     gene_data = pd.DataFrame(
         [(-100, 50), (11, 20), (22.1, 12.6), (0.1, 0.5), (51.76, 28.42)],
