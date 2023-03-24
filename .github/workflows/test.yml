@@ -8,6 +8,8 @@ jobs:
     strategy:
       matrix:
         python-version: ['3.8', '3.9', '3.10', '3.11']
+    permissions:
+      checks: write
 
     steps:
       - uses: actions/checkout@v3
@@ -29,3 +31,14 @@ jobs:
 
       - name: Type checking
         run: poetry run mypy isn_tractor/
+
+      - name: Tests
+        run: poetry run pytest --junitxml=report.xml --cov=isn_tractor/ --cov-fail-under=45
+
+      - name: Test report
+        uses: dorny/test-reporter@v1
+        if: success() || failure()
+        with:
+          name: Tests on Python ${{ matrix.python-version }}
+          path: report.xml
+          reporter: java-junit

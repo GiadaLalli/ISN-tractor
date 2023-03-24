@@ -3,13 +3,32 @@ Interactome based Individual Specific Networks (Ib-ISN)
 
 Copyright 2023 Giada Lalli
 """
-from typing import Union, Literal, Tuple, List
+from typing import Union, Literal, Tuple, List, Any, Callable, Optional
 import pandas as pd
 import numpy as np
-import allel
-from scipy.stats import spearmanr
-from sklearn.metrics import normalized_mutual_info_score as mutual_info
+from numpy._typing import _ArrayLikeFloat_co, _FloatLike_co
 import torch as t
+
+MetricFn = Callable[
+    [t.Tensor, t.Tensor],
+    Union[_ArrayLikeFloat_co, _FloatLike_co],
+]
+
+PoolingFn = Callable[
+    [Union[_ArrayLikeFloat_co, _FloatLike_co]],
+    _FloatLike_co,
+]
+
+Metric = Union[
+    Literal["pearson"],
+    Literal["spearman"],
+    Literal["dot"],
+    MetricFn,
+]
+
+Pooling = Union[Literal["max"], Literal["avg"], Literal["average"], PoolingFn]
+
+MappedInteraction = Tuple[List[str], List[str]]
 
 
 # # Functions
@@ -60,53 +79,73 @@ def preprocess_snp(snp_info: pd.DataFrame) -> pd.DataFrame:
     return snp_info
 
 
-# ### Imputation
+# ### Imputation for SNP or Gene expression dataset
 
 
-def impute(snps: pd.DataFrame) -> pd.DataFrame:
+def mode_genotype(column: pd.Series) -> pd.Series:
+    """
+    Replace missing values in a column with the mode
+    """
+    mod = np.argmax(
+        [
+            np.sum(column == 0),
+            np.sum(column == 1),
+            np.sum(column == 2),
+        ]
+    )
+    return column.replace(-9, mod)
+
+
+def mean_genotype(column: pd.Series) -> pd.Series:
+    """
+    Replace missing values in a column with the column mean.
+    """
+    return column.replace(np.nan, np.nanmean(column))
+
+
+def impute(
+    data: pd.DataFrame, replace: Callable[[pd.Series], Any] = mode_genotype
+) -> pd.DataFrame:
     """
     Estimation of missing genotypes from the haplotype or genotype reference.
-    Replacing missing data (usually stored as 9 and/or -9) with the most
-    reasonable value.
+
+    replace: A function used to replace missing values in a column. By default,
+             replacing missing data (usually stored as 9 and/or -9) with the mode
+             of a column. You can use the supplied `mean_genotype` function for
+             continuous data or `mode_genotype` for discrete data.
     """
-    for j in range(snps.shape[1]):
-        snp = snps.iloc[:, j]
-        miss = snp == -9
-        if np.sum(miss) == 0:
-            continue
-        n_0 = np.sum(snp == 0)
-        n_1 = np.sum(snp == 1)
-        n_2 = np.sum(snp == 2)
-        # compute the mode genotype of every SNP
-        mod = np.argmax([n_0, n_1, n_2])
-        snps.iloc[miss, j] = mod
-    return snps
+    for j in range(data.shape[1]):
+        datum = data.iloc[:, j]
+        data.iloc[:, j] = replace(datum)
+    return data
 
 
-def impute_chunked(snps: pd.DataFrame, chunks: int) -> pd.DataFrame:
+def impute_chunked(
+    data: pd.DataFrame, chunks: int, replace: Callable[[pd.Series], Any] = mode_genotype
+) -> pd.DataFrame:
     """
-    Impute when the data is too large.
+    Impute a large dataset by imputing chunks of columns.
     """
-    column_index = snps.columns.tolist()
-    chunk_idx = np.array_split(np.arange(snps.shape[1]), chunks)
-    collected = [impute(snps.iloc[:, idx]) for idx in chunk_idx]
-    snps_imputed = pd.concat(collected, axis=1).reindex(columns=column_index)
-    snps_imputed.columns = column_index
-    return snps_imputed
+    columns = data.columns.tolist()
+    chunk_idx = np.array_split(np.arange(data.shape[1]), chunks)
+    collected = [impute(data.iloc[:, idx], replace) for idx in chunk_idx]
+    imputed = pd.concat(collected, axis=1).reindex(columns=columns)
+    imputed.columns = columns
+    return imputed
 
 
 # ## Mapping
 
 
 def positional_mapping(
-    snp_info: pd.DataFrame, gene_info: pd.DataFrame, neighborhood: int
+    unmapped_info: pd.DataFrame, mapped_info: pd.DataFrame, neighborhood: int
 ):
     """
     Map SNPs to genes according to the genomic location.
 
-    :param snp_info: a pd data.frame of size [n_snps, 2]
+    :param unmapped_info: a pd data.frame of size [n_snps, 2]
            where the 2 columns are the chromosome and position of every SNP.
-    :param gene_info: a pd data.frame of size [n_genes, 3]
+    :param mapped_info: a pd data.frame of size [n_genes, 3]
            where the 3 columns are the chromosome, start location and end
            location of every gene.
     :param neighborhood: an integer indicating how many base pairs around
@@ -118,16 +157,16 @@ def positional_mapping(
     mapping = {}
 
     # loop over all genes
-    for i in range(gene_info.shape[0]):
+    for i in range(mapped_info.shape[0]):
         # SNP is assigned to a gene if it's located in between the lower and upper bounds
-        lowbound = gene_info.iloc[i, 1] - neighborhood
-        upbound = gene_info.iloc[i, 2] + neighborhood
+        lowbound = mapped_info.iloc[i, 1] - neighborhood
+        upbound = mapped_info.iloc[i, 2] + neighborhood
         idx = np.where(
             np.all(
                 (
-                    snp_info.to_numpy()[:, 0] == gene_info.to_numpy()[i, 0],
-                    snp_info.to_numpy()[:, 1] >= lowbound,
-                    snp_info.to_numpy()[:, 1] <= upbound,
+                    unmapped_info.to_numpy()[:, 0] == mapped_info.to_numpy()[i, 0],
+                    unmapped_info.to_numpy()[:, 1] >= lowbound,
+                    unmapped_info.to_numpy()[:, 1] <= upbound,
                 ),
                 axis=0,
             )
@@ -136,9 +175,9 @@ def positional_mapping(
         if len(idx) == 0:  # skip genes if no SNP assigned
             continue
         if len(idx) == 1:  # in case only 1 SNP is mapped to the gene
-            mapping[gene_info.index.values[i]] = [snp_info.index.values[idx]]
+            mapping[mapped_info.index.values[i]] = [unmapped_info.index.values[idx]]
         else:  # in case multiple SNPs are mapped to the gene
-            mapping[gene_info.index.values[i]] = snp_info.index.values[idx]
+            mapping[mapped_info.index.values[i]] = unmapped_info.index.values[idx]
 
     return mapping
 
@@ -146,157 +185,134 @@ def positional_mapping(
 # ## Interactions
 
 
-def snp_interaction(
-    interact: pd.DataFrame, gene_info: pd.DataFrame, snp_info: pd.DataFrame
-) -> Tuple[List[Tuple[List[str], List[str]]], List[Tuple[str, str]]]:
+def map_interaction(
+    interact: pd.DataFrame,
+    mapped_info: pd.DataFrame,
+    unmapped_info: pd.DataFrame,
+    neighborhood: int = 2000,
+) -> Tuple[List[MappedInteraction], pd.DataFrame]:
     """
     Select the genes.
 
     :param interact: a pd data.frame of size [n_interactions, 2]
            where the 2 columns are the 2 gene IDs of the interaction.
-    :param gene_info: a pd data.frame of size [n_genes, 3]
+    :param mapped_info: a pd data.frame of size [n_genes, 3]
            where the 3 columns are the chromosome, start location and
            end location of every gene.
-    :param snp_info: a pd data.frame of size [n_snps, 2]
+    :param unmapped_info: a pd data.frame of size [n_snps, 2]
            where the 2 columns are the chromosome and position
            of every SNP.
     :return:
     """
 
-    mapping = positional_mapping(snp_info, gene_info, 2000)
+    mapping = positional_mapping(unmapped_info, mapped_info, neighborhood)
 
-    interact_sub = []
-    interact_snp = []
-    for gene_id_1, gene_id_2 in interact.to_records(index=False):
-        if gene_id_1 in mapping and gene_id_2 in mapping:
-            interact_sub.append((gene_id_1, gene_id_2))
-            interact_snp.append((mapping[gene_id_1], mapping[gene_id_2]))
+    interact_mapped = []
+    interact_unmapped = []
+    for feature_1, feature_2 in interact.to_records(index=False):
+        if feature_1 in mapping and feature_2 in mapping:
+            interact_mapped.append((feature_1, feature_2))
+            interact_unmapped.append((mapping[feature_1], mapping[feature_2]))
 
-    interact_sub = pd.DataFrame(interact_sub, columns=["gene_id_1", "gene_id_2"])
-
-    return (interact_snp, interact_sub)
-
-
-# ## Metrics
+    return (
+        interact_unmapped,
+        pd.DataFrame(interact_mapped, columns=["gene_id_1", "gene_id_2"]),
+    )
 
 
-def __pooling(scores, pool):
-    """
-    Pool the pairwise scores together.
-
-    :param scores: a matrix containing all the scores.
-    :param pool: a string indicating the pooling method. Currently only average- and max-pooling.
-    :return: a single value.
-    """
-
-    if pool in ("avg", "average"):
-        return np.mean(scores)
-    if pool == "max":
-        return np.max(scores)
-
-    raise ValueError("Wrong input for pooling method!")
+# ## Metrics for unmapped discrete data
 
 
-def __compute_metric(X, Y, method, pool):  # pylint: disable=C0103
-    """
-    Compute the metric between 2 sets of SNPs.
-
-    :param X: a matrix of size [n_samples, n_snps1].
-    :param Y: a matrix of size [n_samples, n_snps2].
-    :param method: a string indicating the metric. Currently support Pearson correlation,
-                Spearman correlation, Mutual Information and LD r^2.
-    :param pool: a string indicating the pooling method. Currently only average- and max-pooling.
-    :return: a single value for the metric.
-    """
-
-    if method == "pearson":  # Pearson correlation
-        # pylint: disable=C0103
-        XY = np.concatenate([X, Y], axis=1)
-        scores = np.corrcoef(XY.T)[: X.shape[1] - 1, X.shape[1] :]
-        score = __pooling(scores, pool)
-    elif method == "spearman":  # Spearman correlation
-        scores = spearmanr(X, Y)[0]
-        score = __pooling(scores, pool)
-    elif method == "mutual_info":  # normalized mutual information
-        scores = np.zeros((X.shape[1], Y.shape[1]))
-        for i in range(X.shape[1]):
-            for j in range(Y.shape[1]):
-                scores[i, j] = mutual_info(X[:, i], Y[:, j])
-        score = __pooling(scores, pool)
-    elif method == "LD":  # LD r^2 score
-        scores = allel.rogers_huff_r_between(X.T, Y.T)  # LD r score
-        scores = np.square(scores)  # LD r^2 score
-        score = __pooling(scores, pool)
-    elif method == "dot":  # dot product
-        # pylint: disable=E1101
-        scores = t.matmul(X.T, Y)
-        score = __pooling(scores, pool)
-    else:
-        raise ValueError("Wrong input for metric!")
-    return score
+def __pearson_metric(first, second):
+    min_rows = min(first.shape[0], second.shape[0])
+    first = first[:min_rows]
+    second = second[:min_rows]
+    combined = t.cat([first, second], dim=1)  # TODO: Should this be t.stack()
+    return t.corrcoef(combined.T)[: first.shape[1] - 1, first.shape[1] :]
 
 
-# ## ISNs calculation
+def __spearman_metric(first, second):
+    if (first.dim(), second.dim()) == (1, 1):
+        first_sorted = t.argsort(first)
+        second_sorted = t.argsort(second)
+        combined = t.stack(
+            (first_sorted, second_sorted)
+        )  # TODO: This changed from t.cat()
+        return t.corrcoef(combined)[0, 1]
+
+    first_sorted = t.argsort(first, dim=0)
+    second_sorted = t.argsort(second, dim=0)
+    combined = t.cat(
+        (first_sorted, second_sorted), dim=1
+    )  # TODO: Should this be t.stack()
+    return t.corrcoef(combined.T)[: first.shape[1] - 1, first.shape[1] :]
 
 
-def __isn_calculation_per_edge(snp1_list, snp2_list, metric, pool):
+def __dot_metric(first, second):
+    return t.matmul(first.permute(*t.arange(first.ndim - 1, -1, -1)), second).numpy()
+
+
+# ## ISNs computation for SNP array
+
+
+def __isn_edge(
+    metric: MetricFn,
+    pool: PoolingFn,
+):
     """
     Internal
     """
-    glob = __compute_metric(snp1_list, snp2_list, metric, pool)
-    result = []
 
-    for indx in range(snp1_list.shape[0]):
-        snp1_loo = np.delete(snp1_list, indx, axis=0)
-        snp2_loo = np.delete(snp2_list, indx, axis=0)
-        avg = __compute_metric(snp1_loo, snp2_loo, metric, pool)
-        result.append(snp1_list.shape[0] * (glob - avg) + avg)
+    def isn_edge_implementation(first: t.Tensor, second: t.Tensor):
+        rows = first.shape[0]
+        glob = pool(metric(first, second))
+        result = []
 
-    return result
+        for indx in range(first.shape[0]):
+            loo_1 = t.cat((first[:indx], first[indx + 1 :]))
+            loo_2 = t.cat((second[:indx], second[indx + 1 :]))
+            avg = pool(metric(loo_1, loo_2))
+            result.append(rows * (glob - avg) + avg)  # type: ignore[call-overload,operator]
+
+        return np.array(result, dtype=np.float64)
+
+    return isn_edge_implementation
 
 
-def compute_isn(
-    snps,
-    interact_snp,
-    interact_gene,
-    metric: Union[
-        Literal["pearson"],
-        Literal["spearman"],
-        Literal["mutual_info"],
-        Literal["LD"],
-        Literal["dot"],
-    ],
-    pool: Union[Literal["max"], Literal["avg"], Literal["average"]],
+def __make_array(*xs):
+    return np.array(xs, dtype=object)
+
+
+def __make_edge_fn(
+    data,
+    metric_fn: MetricFn,
+    pool_fn: PoolingFn,
+    device: Optional[t.device] = None,
 ):
-    """
-    Network computation guided by weighted edges given interaction relevance.
-    """
-    isn = np.zeros((snps.shape[0], len(interact_snp)))
+    edge = __isn_edge(metric_fn, pool_fn)
 
-    for index, (snps_assoc_gene_1, snps_assoc_gene_2) in enumerate(interact_snp):
-        element_one = np.array(snps_assoc_gene_1, dtype=object)
-        element_two = np.array(snps_assoc_gene_2, dtype=object)
+    def make_edge(assoc_1, assoc_2):
+        element_one = __make_array(assoc_1)
+        element_two = __make_array(assoc_2)
 
         intersection_1 = (
-            snps[element_one[0]]
+            data[element_one[0]]
             if len(element_one) == 1
-            else snps[snps.columns.intersection(element_one)]
+            else data[data.columns.intersection(element_one)]
         )
 
         intersection_2 = (
-            snps[element_two[0]]
+            data[element_two[0]]
             if len(element_two) == 1
-            else snps[snps.columns.intersection(element_two)]
+            else data[data.columns.intersection(element_two)]
         )
 
-        edge = __isn_calculation_per_edge(
-            t.tensor(intersection_1.values),  # pylint: disable=E1101
-            t.tensor(intersection_2.values),  # pylint: disable=E1101
-            metric,
-            pool,
+        return edge(
+            t.tensor(intersection_1.values, device=device),
+            t.tensor(intersection_2.values, device=device),
         )
-        isn[:, index] = edge
 
+<<<<<<< HEAD
     isn = pd.DataFrame(isn, columns=[a + "_" + b for a, b in interact_gene.values])
     return isn
 
@@ -335,12 +351,23 @@ def __make_edge_fn(data, metric_fn: MetricFn, pool_fn: PoolingFn, cuda: Optional
 
 
 #function for computation of sparse ISNs with CUDA parameter
+=======
+    return make_edge
+
+
+def __identity(value: _FloatLike_co) -> _FloatLike_co:
+    return value
+
+
+# pylint: disable=too-many-arguments
+>>>>>>> 21092336514ba7f0494912e98ec959b9bbc3aa8e
 def sparse_isn(
     data,
     interact_unmapped,
     interact_mapped,
     metric: Metric,
     pool: Optional[Pooling] = None,
+<<<<<<< HEAD
     cuda: Optional[bool] = False
 ):
     """
@@ -356,6 +383,25 @@ def sparse_isn(
             "mutual_info": __mutual_info_metric,
             "dot": __dot_metric,
         }.get(metric)
+=======
+    device: Optional[t.device] = None,
+):
+    """
+    Network computation guided by weighted edges given interaction relevance.
+
+    Specify the pyTorch device on which computation should take place. For example, pass:
+    `device=t.device("cuda")` to run on the 'current' CUDA device.
+    """
+    if isinstance(metric, str):
+        if (
+            metric_fn := {
+                "pearson": __pearson_metric,
+                "spearman": __spearman_metric,
+                "dot": __dot_metric,
+            }.get(metric)
+        ) is None:
+            raise ValueError(f'"{metric}" is not a valid metric')
+>>>>>>> 21092336514ba7f0494912e98ec959b9bbc3aa8e
     else:
         metric_fn = metric
 
@@ -382,15 +428,35 @@ def sparse_isn(
     assert metric_fn is not None
     assert pooling_fn is not None
 
+<<<<<<< HEAD
     isn_edge = __make_edge_fn(data, metric_fn, pooling_fn, cuda=cuda)
+=======
+    isn_edge = __make_edge_fn(data, metric_fn, pooling_fn, device=device)
+>>>>>>> 21092336514ba7f0494912e98ec959b9bbc3aa8e
 
     return pd.DataFrame(
         np.column_stack([isn_edge(*assoc) for assoc in interact]),
         columns=[a + "_" + b for a, b in interact_mapped.values],
     )
 
+<<<<<<< HEAD
 #function for computation od dense ISNs with CUDA parameter
 def dense_isn(data: pd.DataFrame, metric: Metric, cuda: Optional[bool] = False):
+=======
+
+def __dense_metric(method: str):
+    def metric(data: pd.DataFrame):
+        return data.corr(method=method)  # type: ignore[arg-type]
+
+    return metric
+
+
+def dense_isn(
+    data: pd.DataFrame,
+    metric: Metric,
+    device: Optional[t.device] = None,
+):
+>>>>>>> 21092336514ba7f0494912e98ec959b9bbc3aa8e
     """
     Network computation based on the Lioness algorithm
     """
@@ -412,6 +478,7 @@ def dense_isn(data: pd.DataFrame, metric: Metric, cuda: Optional[bool] = False):
     dense.iloc[:, 0] = np.repeat(net.columns.values, net.columns.size)
     dense.iloc[:, 1] = np.tile(net.columns.values, data.shape[0])
 
+<<<<<<< HEAD
     if cuda:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     else:
@@ -566,3 +633,15 @@ in case of differently shaped matrices '''
     Y = t.argsort(second, dim=0)
     combined = t.cat([X, Y], axis=1)
     return t.corrcoef(combined.T)[: first.shape[1] - 1, first.shape[1] :]
+=======
+    for i in range(num_samples):
+        values = (
+            metric_fn(t.tensor(np.delete(data.T.to_numpy(), i, 0)).to(device))
+            .cpu()
+            .numpy()
+            .flatten()
+        )
+        dense.iloc[:, i + 2] = num_samples * (agg - values) + values
+
+    return dense
+>>>>>>> 21092336514ba7f0494912e98ec959b9bbc3aa8e
