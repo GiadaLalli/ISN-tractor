@@ -540,3 +540,29 @@ def dot_metric_t(first, second):
         
     return t.matmul(first.permute(*t.arange(first.ndim - 1, -1, -1)), second).numpy()
 
+'''
+Revised Pearson & Spearman metrics for CUDA usage
+'''
+
+def pearson_metric_t(first, second):
+    if (first.dim(), second.dim()) == (1, 1):
+        return t.corrcoef(t.tensor([first, second]))[0,1]
+
+    combined = t.cat([first, second], axis=1) #stack can't be used as it takes as input only same shaped tensors; 
+    #here we know that the n_rows is always the same for both tensors (n_rows == samples)
+    return t.corrcoef(combined.T)[: first.shape[1] - 1, first.shape[1] :]
+
+def spearman_metric_t(first, second):
+    if (first.dim(), second.dim()) == (1, 1):
+        X = t.argsort(first)
+        Y = t.argsort(second)
+        combined = t.cat([X, Y], axis=1)
+        return t.corrcoef(combined.T)[0,1]
+'''as long as the shape is different due to the second arg given 
+(i.e., a = t.rand(N, X) & b = t.rand(N, Y) there's no problem as per above 
+explaination; t.cat works just better for us, as stack really cannot be used 
+in case of differently shaped matrices '''
+    X = t.argsort(first, dim=0)   
+    Y = t.argsort(second, dim=0)
+    combined = t.cat([X, Y], axis=1)
+    return t.corrcoef(combined.T)[: first.shape[1] - 1, first.shape[1] :]
