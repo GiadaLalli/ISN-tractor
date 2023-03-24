@@ -305,7 +305,7 @@ def __make_edge_fn(
             t.tensor(intersection_2.values, device=device),
         )
 
-<<<<<<< HEAD
+
     isn = pd.DataFrame(isn, columns=[a + "_" + b for a, b in interact_gene.values])
     return isn
 
@@ -344,7 +344,6 @@ def __make_edge_fn(data, metric_fn: MetricFn, pool_fn: PoolingFn, cuda: Optional
 
 
 #function for computation of sparse ISNs with CUDA parameter
-=======
     return make_edge
 
 
@@ -353,14 +352,12 @@ def __identity(value: _FloatLike_co) -> _FloatLike_co:
 
 
 # pylint: disable=too-many-arguments
->>>>>>> 21092336514ba7f0494912e98ec959b9bbc3aa8e
 def sparse_isn(
     data,
     interact_unmapped,
     interact_mapped,
     metric: Metric,
     pool: Optional[Pooling] = None,
-<<<<<<< HEAD
     cuda: Optional[bool] = False
 ):
     """
@@ -376,7 +373,6 @@ def sparse_isn(
             "mutual_info": __mutual_info_metric,
             "dot": __dot_metric,
         }.get(metric)
-=======
     device: Optional[t.device] = None,
 ):
     """
@@ -394,7 +390,6 @@ def sparse_isn(
             }.get(metric)
         ) is None:
             raise ValueError(f'"{metric}" is not a valid metric')
->>>>>>> 21092336514ba7f0494912e98ec959b9bbc3aa8e
     else:
         metric_fn = metric
 
