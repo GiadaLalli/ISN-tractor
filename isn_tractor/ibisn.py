@@ -291,7 +291,39 @@ def __isn_edge(
 def __make_array(*xs):
     return np.array(xs, dtype=object)
 
+def __make_edge_fn(
+    data,
+    metric_fn: MetricFn,
+    pool_fn: PoolingFn,
+    device: Optional[t.device] = None,
+):
+    edge = __isn_edge(metric_fn, pool_fn)
 
+    def make_edge(assoc_1, assoc_2):
+        element_one = __make_array(assoc_1)
+        element_two = __make_array(assoc_2)
+
+        intersection_1 = (
+            data[element_one[0]]
+            if len(element_one) == 1
+            else data[data.columns.intersection(element_one)]
+        )
+
+        intersection_2 = (
+            data[element_two[0]]
+            if len(element_two) == 1
+            else data[data.columns.intersection(element_two)]
+        )
+
+        return edge(
+            t.tensor(intersection_1.values, device=device),
+            t.tensor(intersection_2.values, device=device),
+        )
+
+    return make_edge
+
+
+'''
 def __make_edge_fn(
     data,
     metric_fn: MetricFn,
@@ -361,14 +393,14 @@ def __make_edge_fn(data, metric_fn: MetricFn, pool_fn: PoolingFn, cuda: Optional
 
 #function for computation of sparse ISNs with CUDA parameter
     return make_edge
-
+'''
 
 def __identity(value: _FloatLike_co) -> _FloatLike_co:
     return value
 
 
 # pylint: disable=too-many-arguments
-def sparse_isn(
+'''def sparse_isn(
     data,
     interact_unmapped,
     interact_mapped,
@@ -447,6 +479,59 @@ def sparse_isn(
 #function for computation od dense ISNs with CUDA parameter
 def dense_isn(data: pd.DataFrame, metric: Metric, cuda: Optional[bool] = False):
 =======
+'''
+def sparse_isn(
+    data,
+    interact_unmapped,
+    interact_mapped,
+    metric: Metric,
+    pool: Optional[Pooling] = None,
+    device: Optional[t.device] = None,
+):
+    """
+    Network computation guided by weighted edges given interaction relevance.
+    """
+    if metric not in ["pearson", "spearman", "dot"]:
+        raise ValueError(f'"{metric}" is not a valid metric')
+
+    if isinstance(metric, str):
+        metric_fn = {
+            "pearson": __pearson_metric,
+            "spearman": __spearman_metric,
+            "dot": __dot_metric,
+        }.get(metric)
+    else:
+        metric_fn = metric
+
+    if pool is None:
+        pooling_fn: PoolingFn = __identity  # type: ignore[assignment]
+    elif isinstance(pool, str):
+        if (
+            pooling_fn := {  # type: ignore[assignment]
+                "max": np.max,
+                "avg": np.mean,
+                "average": np.mean,
+            }.get(pool)
+        ) is None:
+            raise ValueError(f'"{pool}" is not a valid pooling method')
+    else:
+        pooling_fn = pool
+
+    if interact_unmapped is not None:
+        interact = interact_unmapped
+    else:
+        interact = interact_mapped.values
+
+    assert np.all(snp.isin(data.columns) for snp in interact)  # type: ignore[call-overload]
+    assert metric_fn is not None
+    assert pooling_fn is not None
+
+    isn_edge = __make_edge_fn(data, metric_fn, pooling_fn, device=device)
+
+    return pd.DataFrame(
+        np.column_stack([isn_edge(*assoc) for assoc in interact]),
+        columns=[a + "_" + b for a, b in interact_mapped.values],
+    )
 
 def __dense_metric(method: str):
     def metric(data: pd.DataFrame):
