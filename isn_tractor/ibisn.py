@@ -221,32 +221,25 @@ def map_interaction(
 
 
 # ## Metrics for unmapped discrete data
-
-
 def __pearson_metric(first, second):
-    min_rows = min(first.shape[0], second.shape[0])
-    first = first[:min_rows]
-    second = second[:min_rows]
-    combined = t.cat([first, second], dim=1)  # TODO: Should this be t.stack()
-    return t.corrcoef(combined.T)[: first.shape[1] - 1, first.shape[1] :]
+    if (first.dim(), second.dim()) == (1, 1):
+        return t.corrcoef(t.tensor([first, second]))[0,1]
 
+    combined = t.cat([first, second], axis=1) #stack can't be used as it takes as input only same shaped tensors; 
+    #here we know that the n_rows is always the same for both tensors (n_rows == samples)
+    return t.corrcoef(combined.T)[: first.shape[1] - 1, first.shape[1] :]
 
 def __spearman_metric(first, second):
     if (first.dim(), second.dim()) == (1, 1):
-        first_sorted = t.argsort(first)
-        second_sorted = t.argsort(second)
-        combined = t.stack(
-            (first_sorted, second_sorted)
-        )  # TODO: This changed from t.cat()
-        return t.corrcoef(combined)[0, 1]
+        X = t.argsort(first)
+        Y = t.argsort(second)
+        combined = t.cat([X, Y], axis=1)
+        return t.corrcoef(combined.T)[0,1]
 
-    first_sorted = t.argsort(first, dim=0)
-    second_sorted = t.argsort(second, dim=0)
-    combined = t.cat(
-        (first_sorted, second_sorted), dim=1
-    )  # TODO: Should this be t.stack()
+    X = t.argsort(first, dim=0)   
+    Y = t.argsort(second, dim=0)
+    combined = t.cat([X, Y], axis=1)
     return t.corrcoef(combined.T)[: first.shape[1] - 1, first.shape[1] :]
-
 
 def __dot_metric(first, second):
     return t.matmul(first.permute(*t.arange(first.ndim - 1, -1, -1)), second).numpy()
@@ -439,7 +432,7 @@ def sparse_isn(
         columns=[a + "_" + b for a, b in interact_mapped.values],
     )
 
-<<<<<<< HEAD
+
 #function for computation od dense ISNs with CUDA parameter
 def dense_isn(data: pd.DataFrame, metric: Metric, cuda: Optional[bool] = False):
 =======
@@ -456,7 +449,7 @@ def dense_isn(
     metric: Metric,
     device: Optional[t.device] = None,
 ):
->>>>>>> 21092336514ba7f0494912e98ec959b9bbc3aa8e
+
     """
     Network computation based on the Lioness algorithm
     """
@@ -478,7 +471,6 @@ def dense_isn(
     dense.iloc[:, 0] = np.repeat(net.columns.values, net.columns.size)
     dense.iloc[:, 1] = np.tile(net.columns.values, data.shape[0])
 
-<<<<<<< HEAD
     if cuda:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     else:
@@ -495,145 +487,6 @@ def dense_isn(
             ).values.flatten()
         dense.iloc[:, i + 2] = num_samples * (agg - values) + values
 
-    return dense
-
-'''
-NEW METRICS
-1) Torch version of Pearson
-2) TorchMetrics version of Pearson
-3) Torch-based version of Spearman
-4) TorchMetrics version of Spearman
-5) Torch-base version of LD R2
-6) TorchMetrics version of LD R2
-7) Torch-based version of Norm Mut Info
-8) Torch-based version of Dot Prod
-'''
-import torchmetrics
-from torchmetrics import SpearmanCorrCoef, PearsonCorrCoef, R2Score
-
-def pearson_metric_t(first, second):
-        
-    if (first.dim(), second.dim()) == (1, 1):
-        return t.corrcoef(t.tensor(first,second))[0,1]
-
-    combined = t.cat([first, second], axis=1)
-    return t.corrcoef(combined.T)[: first.shape[1] - 1, first.shape[1] :]
-
-def pearson_corr_tm(first: t.Tensor, second: t.Tensor) -> float:
-        
-    # Reshape both tensors to 1D
-    first_flat = first.reshape(-1)
-    second_flat = second.reshape(-1)
-
-    # Pad the smaller tensor with zeros if needed to match the length of the larger tensor
-    if len(first_flat) > len(second_flat):
-        second_flat = t.cat([second_flat, t.zeros(len(first_flat) - len(second_flat))])
-    else:
-        first_flat = t.cat([first_flat, t.zeros(len(second_flat) - len(first_flat))])
-
-    # Compute the spearman correlation score
-    pearson = PearsonCorrCoef()
-    score = pearson(first_flat, second_flat)
-    return score.item()
-
-def spearman_metric_t(first, second):
-        
-    if (first.dim(), second.dim()) == (1, 1):
-        X = t.argsort(first)
-        Y = t.argsort(second)
-        combined = t.cat([X, Y], axis=1)
-        return t.corrcoef(combined.T)[0,1]
-
-    X = t.argsort(first, dim=0)   
-    Y = t.argsort(second, dim=0)
-    combined = t.cat([X, Y], axis=1)
-    return t.corrcoef(combined.T)[: first.shape[1] - 1, first.shape[1] :]
-
-def spearman_score_tm(first: t.Tensor, second: t.Tensor) -> float:
-
-    # Reshape both tensors to 1D
-    first_flat = first.reshape(-1)
-    second_flat = second.reshape(-1)
-
-    # Pad the smaller tensor with zeros if needed to match the length of the larger tensor
-    if len(first_flat) > len(second_flat):
-        second_flat = t.cat([second_flat, t.zeros(len(first_flat) - len(second_flat))])
-    else:
-        first_flat = t.cat([first_flat, t.zeros(len(second_flat) - len(first_flat))])
-
-    # Compute the spearman correlation score
-    spearman = SpearmanCorrCoef()
-    score = spearman(first_flat, second_flat)
-    return score.item()
-
-def linkdis_metric_t(first, second):
-        
-    first = t.tensor(first)
-    second = t.tensor(second)
-    scores = allel.rogers_huff_r_between(first.T, second.T)
-    scores = t.square(t.from_numpy(scores))
-    score = t.mean(scores)
-    return score.item()
-
-def r2_score_tm(first: t.Tensor, second: t.Tensor) -> float:
-        
-    # Reshape both tensors to 1D
-    first_flat = first.reshape(-1)
-    second_flat = second.reshape(-1)
-
-    # Pad the smaller tensor with zeros if needed to match the length of the larger tensor
-    if len(first_flat) > len(second_flat):
-        second_flat = t.cat([second_flat, t.zeros(len(first_flat) - len(second_flat))])
-    else:
-        first_flat = t.cat([first_flat, t.zeros(len(second_flat) - len(first_flat))])
-
-    # Compute the spearman correlation score
-    r2score = R2Score()
-    score = r2score(first_flat, second_flat)
-    return score.item()
-
-def mutualinfo_metric_t(first, second):
-        
-    if (first.dim(), second.dim()) == (1, 1):
-        return mutual_info(first, second)
-
-    scores = t.zeros((first.shape[1], second.shape[1]))
-    for i in range(first.shape[1]):
-        for j in range(second.shape[1]):
-            scores[i, j] = mutual_info(first[:, i], second[:, j])
-    return scores.numpy()
-
-def dot_metric_t(first, second):
-        
-    return t.matmul(first.permute(*t.arange(first.ndim - 1, -1, -1)), second).numpy()
-
-'''
-Revised Pearson & Spearman metrics for CUDA usage
-'''
-
-def pearson_metric_t(first, second):
-    if (first.dim(), second.dim()) == (1, 1):
-        return t.corrcoef(t.tensor([first, second]))[0,1]
-
-    combined = t.cat([first, second], axis=1) #stack can't be used as it takes as input only same shaped tensors; 
-    #here we know that the n_rows is always the same for both tensors (n_rows == samples)
-    return t.corrcoef(combined.T)[: first.shape[1] - 1, first.shape[1] :]
-
-def spearman_metric_t(first, second):
-    if (first.dim(), second.dim()) == (1, 1):
-        X = t.argsort(first)
-        Y = t.argsort(second)
-        combined = t.cat([X, Y], axis=1)
-        return t.corrcoef(combined.T)[0,1]
-'''as long as the shape is different due to the second arg given 
-(i.e., a = t.rand(N, X) & b = t.rand(N, Y) there's no problem as per above 
-explaination; t.cat works just better for us, as stack really cannot be used 
-in case of differently shaped matrices '''
-    X = t.argsort(first, dim=0)   
-    Y = t.argsort(second, dim=0)
-    combined = t.cat([X, Y], axis=1)
-    return t.corrcoef(combined.T)[: first.shape[1] - 1, first.shape[1] :]
-=======
     for i in range(num_samples):
         values = (
             metric_fn(t.tensor(np.delete(data.T.to_numpy(), i, 0)).to(device))
@@ -644,4 +497,4 @@ in case of differently shaped matrices '''
         dense.iloc[:, i + 2] = num_samples * (agg - values) + values
 
     return dense
->>>>>>> 21092336514ba7f0494912e98ec959b9bbc3aa8e
+
