@@ -221,41 +221,20 @@ def map_interaction(
 
 
 # ## Metrics for unmapped discrete data
+
 def __pearson_metric(first, second):
     if (first.dim(), second.dim()) == (1, 1):
         return t.corrcoef(t.tensor([first, second]))[0,1]
 
-<<<<<<< HEAD
     combined = t.cat([first, second], axis=1) 
-    '''t.stack can't be used as it takes as input only same shaped tensors; 
-    here we know that the n_rows is always the same for both tensors 
-    (n_rows == samples)'''
-=======
-    combined = t.cat([first, second], axis=1) #stack can't be used as it takes as input only same shaped tensors; 
-    #here we know that the n_rows is always the same for both tensors (n_rows == samples)
->>>>>>> 78fb5caba4f1031f353cfdfa2362cea533bad9be
     return t.corrcoef(combined.T)[: first.shape[1] - 1, first.shape[1] :]
 
 def __spearman_metric(first, second):
-    if (first.dim(), second.dim()) == (1, 1):
-        X = t.argsort(first)
-        Y = t.argsort(second)
-        combined = t.cat([X, Y], axis=1)
-        return t.corrcoef(combined.T)[0,1]
-<<<<<<< HEAD
-'''
-The cat function concatenates tensors along a given dimension. 
-However, the dimension to concatenate should be the same for both tensors. 
-In the current implementation, axis=1 is used assuming that both tensors have 
-the same number of rows, as the rows represent the samples.
-'''
-=======
-
->>>>>>> 78fb5caba4f1031f353cfdfa2362cea533bad9be
     X = t.argsort(first, dim=0)   
     Y = t.argsort(second, dim=0)
     combined = t.cat([X, Y], axis=1)
     return t.corrcoef(combined.T)[: first.shape[1] - 1, first.shape[1] :]
+
 
 def __dot_metric(first, second):
     return t.matmul(first.permute(*t.arange(first.ndim - 1, -1, -1)), second).numpy()
