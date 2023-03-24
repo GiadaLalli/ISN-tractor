@@ -223,9 +223,6 @@ def map_interaction(
 # ## Metrics for unmapped discrete data
 
 def __pearson_metric(first, second):
-    if (first.dim(), second.dim()) == (1, 1):
-        return t.corrcoef(t.tensor([first, second]))[0,1]
-
     combined = t.cat([first, second], axis=1) 
     return t.corrcoef(combined.T)[: first.shape[1] - 1, first.shape[1] :]
 
