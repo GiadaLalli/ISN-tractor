@@ -221,16 +221,19 @@ def map_interaction(
 
 
 # ## Metrics for unmapped discrete data
-
-
 def __pearson_metric(first, second):
     if (first.dim(), second.dim()) == (1, 1):
         return t.corrcoef(t.tensor([first, second]))[0,1]
 
+<<<<<<< HEAD
     combined = t.cat([first, second], axis=1) 
     '''t.stack can't be used as it takes as input only same shaped tensors; 
     here we know that the n_rows is always the same for both tensors 
     (n_rows == samples)'''
+=======
+    combined = t.cat([first, second], axis=1) #stack can't be used as it takes as input only same shaped tensors; 
+    #here we know that the n_rows is always the same for both tensors (n_rows == samples)
+>>>>>>> 78fb5caba4f1031f353cfdfa2362cea533bad9be
     return t.corrcoef(combined.T)[: first.shape[1] - 1, first.shape[1] :]
 
 def __spearman_metric(first, second):
@@ -239,12 +242,16 @@ def __spearman_metric(first, second):
         Y = t.argsort(second)
         combined = t.cat([X, Y], axis=1)
         return t.corrcoef(combined.T)[0,1]
+<<<<<<< HEAD
 '''
 The cat function concatenates tensors along a given dimension. 
 However, the dimension to concatenate should be the same for both tensors. 
 In the current implementation, axis=1 is used assuming that both tensors have 
 the same number of rows, as the rows represent the samples.
 '''
+=======
+
+>>>>>>> 78fb5caba4f1031f353cfdfa2362cea533bad9be
     X = t.argsort(first, dim=0)   
     Y = t.argsort(second, dim=0)
     combined = t.cat([X, Y], axis=1)
@@ -314,6 +321,45 @@ def __make_edge_fn(
             t.tensor(intersection_2.values, device=device),
         )
 
+
+    isn = pd.DataFrame(isn, columns=[a + "_" + b for a, b in interact_gene.values])
+    return isn
+
+#modified __make_edge_fn to support the cuda parameter and use CUDA if requested 
+def __make_edge_fn(data, metric_fn: MetricFn, pool_fn: PoolingFn, cuda: Optional[bool] = False):
+    edge = __isn_edge(metric_fn, pool_fn)
+
+    def make_edge(assoc_1, assoc_2):
+        element_one = __make_array(assoc_1)
+        element_two = __make_array(assoc_2)
+
+        intersection_1 = (
+            data[element_one[0]]
+            if len(element_one) == 1
+            else data[data.columns.intersection(element_one)]
+        )
+
+        intersection_2 = (
+            data[element_two[0]]
+            if len(element_two) == 1
+            else data[data.columns.intersection(element_two)]
+        )
+
+        x = intersection_1.values
+        y = intersection_2.values
+        
+        if cuda:
+            device = 'cuda' if t.cuda.is_available() else 'cpu'
+            x = t.from_numpy(x).to(device)
+            y = t.from_numpy(y).to(device)
+
+        return edge(x, y)
+
+    return make_edge
+
+
+
+#function for computation of sparse ISNs with CUDA parameter
     return make_edge
 
 
@@ -328,6 +374,21 @@ def sparse_isn(
     interact_mapped,
     metric: Metric,
     pool: Optional[Pooling] = None,
+    cuda: Optional[bool] = False
+):
+    """
+    Network computation guided by weighted edges given interaction relevance.
+    """
+    if metric not in ["pearson", "spearman", "mutual_info", "dot"]:
+        raise ValueError(f'"{metric}" is not a valid metric')
+
+    if isinstance(metric, str):
+        metric_fn = {
+            "pearson": __pearson_metric,
+            "spearman": __spearman_metric,
+            "mutual_info": __mutual_info_metric,
+            "dot": __dot_metric,
+        }.get(metric)
     device: Optional[t.device] = None,
 ):
     """
@@ -371,13 +432,21 @@ def sparse_isn(
     assert metric_fn is not None
     assert pooling_fn is not None
 
+<<<<<<< HEAD
+    isn_edge = __make_edge_fn(data, metric_fn, pooling_fn, cuda=cuda)
+=======
     isn_edge = __make_edge_fn(data, metric_fn, pooling_fn, device=device)
+>>>>>>> 21092336514ba7f0494912e98ec959b9bbc3aa8e
 
     return pd.DataFrame(
         np.column_stack([isn_edge(*assoc) for assoc in interact]),
         columns=[a + "_" + b for a, b in interact_mapped.values],
     )
 
+
+#function for computation od dense ISNs with CUDA parameter
+def dense_isn(data: pd.DataFrame, metric: Metric, cuda: Optional[bool] = False):
+=======
 
 def __dense_metric(method: str):
     def metric(data: pd.DataFrame):
@@ -391,6 +460,7 @@ def dense_isn(
     metric: Metric,
     device: Optional[t.device] = None,
 ):
+
     """
     Network computation based on the Lioness algorithm
     """
@@ -412,6 +482,22 @@ def dense_isn(
     dense.iloc[:, 0] = np.repeat(net.columns.values, net.columns.size)
     dense.iloc[:, 1] = np.tile(net.columns.values, data.shape[0])
 
+    if cuda:
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    else:
+        device = torch.device("cpu")
+
+    for i in range(num_samples):
+        if cuda:
+            values = metric_fn(
+                torch.tensor(np.delete(data.T.to_numpy(), i, 0)).to(device)
+            ).cpu().numpy().flatten()
+        else:
+            values = metric_fn(
+                pd.DataFrame(np.delete(data.T.to_numpy(), i, 0))
+            ).values.flatten()
+        dense.iloc[:, i + 2] = num_samples * (agg - values) + values
+
     for i in range(num_samples):
         values = (
             metric_fn(t.tensor(np.delete(data.T.to_numpy(), i, 0)).to(device))
@@ -422,3 +508,4 @@ def dense_isn(
         dense.iloc[:, i + 2] = num_samples * (agg - values) + values
 
     return dense
+
