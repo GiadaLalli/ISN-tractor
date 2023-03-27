@@ -222,15 +222,17 @@ def map_interaction(
 
 # ## Metrics for *unmapped discrete data -> to be changed*
 
+
 def __pearson_metric(first: t.Tensor, second: t.Tensor) -> t.Tensor:
     if first.dim() == 1 and second.dim() == 1:
         combined = t.stack([first, second], dim=1)
     else:
-        combined = t.cat([first, second], axis=1) 
+        combined = t.cat([first, second], axis=1)
     return t.corrcoef(combined.T)[: first.shape[1] - 1, first.shape[1] :]
 
+
 def __spearman_metric(first, second):
-    X = t.argsort(first, dim=0)   
+    X = t.argsort(first, dim=0)
     Y = t.argsort(second, dim=0)
     combined = t.cat([X, Y], axis=1)
     return t.corrcoef(combined.T)[: first.shape[1] - 1, first.shape[1] :]
@@ -270,6 +272,7 @@ def __isn_edge(
 def __make_array(*xs):
     return np.array(xs, dtype=object)
 
+
 def __make_edge_fn(
     data,
     metric_fn: MetricFn,
@@ -302,7 +305,7 @@ def __make_edge_fn(
     return make_edge
 
 
-'''
+"""
 def __make_edge_fn(
     data,
     metric_fn: MetricFn,
@@ -372,7 +375,8 @@ def __make_edge_fn(data, metric_fn: MetricFn, pool_fn: PoolingFn, cuda: Optional
 
 #function for computation of sparse ISNs with CUDA parameter
     return make_edge
-'''
+"""
+
 
 def __identity(value: _FloatLike_co) -> _FloatLike_co:
     return value
@@ -459,6 +463,8 @@ def __identity(value: _FloatLike_co) -> _FloatLike_co:
 def dense_isn(data: pd.DataFrame, metric: Metric, cuda: Optional[bool] = False):
 =======
 '''
+
+
 def sparse_isn(
     data,
     interact_unmapped,
@@ -512,6 +518,7 @@ def sparse_isn(
         columns=[a + "_" + b for a, b in interact_mapped.values],
     )
 
+
 def __dense_metric(method: str):
     def metric(data: pd.DataFrame):
         return data.corr(method=method)  # type: ignore[arg-type]
@@ -524,7 +531,6 @@ def dense_isn(
     metric: Metric,
     device: Optional[t.device] = None,
 ):
-
     """
     Network computation based on the Lioness algorithm
     """
@@ -553,9 +559,12 @@ def dense_isn(
 
     for i in range(num_samples):
         if cuda:
-            values = metric_fn(
-                torch.tensor(np.delete(data.T.to_numpy(), i, 0)).to(device)
-            ).cpu().numpy().flatten()
+            values = (
+                metric_fn(torch.tensor(np.delete(data.T.to_numpy(), i, 0)).to(device))
+                .cpu()
+                .numpy()
+                .flatten()
+            )
         else:
             values = metric_fn(
                 pd.DataFrame(np.delete(data.T.to_numpy(), i, 0))
@@ -572,4 +581,3 @@ def dense_isn(
         dense.iloc[:, i + 2] = num_samples * (agg - values) + values
 
     return dense
-
