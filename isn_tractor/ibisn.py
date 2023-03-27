@@ -314,8 +314,7 @@ def sparse_isn(
     interact_unmapped,
     interact_mapped,
     metric: Metric,
-    pool: Optional[Pooling] = None,
-    cuda: Optional[bool] = False,
+    pool: Optional[Pooling] = None, device: Optional[t.device] = None,
 ):
     """
     Network computation guided by weighted edges given interaction relevance.
@@ -399,15 +398,15 @@ def dense_isn(
     dense.iloc[:, 0] = np.repeat(net.columns.values, net.columns.size)
     dense.iloc[:, 1] = np.tile(net.columns.values, data.shape[0])
 
-    if cuda:
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if device:
+        device = t.device("cuda" if t.cuda.is_available() else "cpu")
     else:
-        device = torch.device("cpu")
+        device = t.device("cpu")
 
     for i in range(num_samples):
-        if cuda:
+        if device:
             values = (
-                metric_fn(torch.tensor(np.delete(data.T.to_numpy(), i, 0)).to(device))
+                metric_fn(t.tensor(np.delete(data.T.to_numpy(), i, 0)).to(device))
                 .cpu()
                 .numpy()
                 .flatten()
