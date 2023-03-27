@@ -220,7 +220,7 @@ def map_interaction(
     )
 
 
-# ## Metrics for unmapped discrete data
+# ## Metrics for *unmapped discrete data -> to be changed*
 
 def __pearson_metric(first: t.Tensor, second: t.Tensor) -> t.Tensor:
     if first.dim() == 1 and second.dim() == 1:
