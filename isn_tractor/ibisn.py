@@ -234,8 +234,8 @@ def __pearson_metric(first: t.Tensor, second: t.Tensor) -> t.Tensor:
 def __spearman_metric(first, second):
     first_sorted = t.argsort(first, dim=0)
     second_sorted = t.argsort(second, dim=0)
-    combined = t.cat([first_sorted, second_sorted], dim=1)
-    return t.corrcoef(combined.T)[: first.shape[1] - 1, first.shape[1] :]
+    combined = t.cat([first_sorted, second_sorted], dim=0)
+    return t.corrcoef(combined)[: first.shape[1] - 1, first.shape[1] :]
 
 
 def __dot_metric(first, second):
