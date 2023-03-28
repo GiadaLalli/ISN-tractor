@@ -404,20 +404,6 @@ def dense_isn(
         device = t.device("cpu")
 
     for i in range(num_samples):
-        if device:
-            values = (
-                metric_fn(t.tensor(np.delete(data.T.to_numpy(), i, 0)).to(device))
-                .cpu()
-                .numpy()
-                .flatten()
-            )
-        else:
-            values = metric_fn(
-                pd.DataFrame(np.delete(data.T.to_numpy(), i, 0))
-            ).values.flatten()
-        dense.iloc[:, i + 2] = num_samples * (agg - values) + values
-
-    for i in range(num_samples):
         values = (
             metric_fn(t.tensor(np.delete(data.T.to_numpy(), i, 0)).to(device))
             .cpu()
