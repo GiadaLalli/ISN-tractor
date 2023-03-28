@@ -222,14 +222,13 @@ def map_interaction(
 
 # ## Metrics for *unmapped discrete data -> to be changed*
 
-
 def __pearson_metric(first: t.Tensor, second: t.Tensor) -> t.Tensor:
     if first.dim() == 1 and second.dim() == 1:
         combined = t.stack([first, second], dim=1)
         return t.corrcoef(combined.T)[0,1]
     else:
         combined = t.cat([first, second], dim=1)
-    	return t.corrcoef(combined.T)[: first.shape[1], first.shape[1] :]
+        return t.corrcoef(combined.T)[: first.shape[1], first.shape[1]]
 
 def __spearman_metric(first, second):
     if (first.dim(), second.dim()) == (1, 1):
