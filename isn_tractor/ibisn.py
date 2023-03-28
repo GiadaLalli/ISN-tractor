@@ -230,29 +230,27 @@ def __pearson_metric(first: t.Tensor, second: t.Tensor) -> t.Tensor:
         combined = t.cat([first, second], dim=1)
     return t.corrcoef(combined.T)[: first.shape[1] - 1, first.shape[1] :]
 
-
 def __spearman_metric(first, second):
-    print(first)
-    print(second)
+    if (first.dim(), second.dim()) == (1, 1):
+        first_sorted = t.argsort(first)
+        second_sorted = t.argsort(second)
+        print(first_sorted)
+        print(second_sorted)
+        combined = t.stack([first_sorted, second_sorted], dim=1)
+        print(combined)
+        print(t.corrcoef(combined.T).shape)
+        print(t.corrcoef(combined.T))
+        return t.corrcoef(combined.T)[0,1]
 
-    # if first.dim() == 1:
-    #     print("first dim = 1")
-    #     first = first.unsqueeze(1)
-    # if second.dim() == 1:
-    #     print("second dim = 1")
-    #     second = second.unsqueeze(1)
-
-    first_sorted = t.argsort(first, dim=0)
+    first_sorted = t.argsort(first, dim=0)   
     second_sorted = t.argsort(second, dim=0)
     print(first_sorted)
     print(second_sorted)
     combined = t.cat([first_sorted, second_sorted], dim=1)
-    # combined = t.stack((first_sorted, second_sorted), dim=0)
     print(combined)
     print(t.corrcoef(combined.T).shape)
     print(t.corrcoef(combined.T))
-    return t.corrcoef(combined.T)[: first.shape[1] - 1, first.shape[1] :]
-
+    return t.corrcoef(combined.T)[: first.shape[1], first.shape[1] :]
 
 def __dot_metric(first, second):
     return t.matmul(first.permute(*t.arange(first.ndim - 1, -1, -1)), second).numpy()
