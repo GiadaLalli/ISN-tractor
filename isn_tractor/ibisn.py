@@ -228,7 +228,7 @@ def __pearson_metric(first: t.Tensor, second: t.Tensor) -> t.Tensor:
         combined = t.stack([first, second], dim=1)
     else:
         combined = t.cat([first, second], dim=1)
-    return t.corrcoef(combined.T)[: first.shape[1] - 1, first.shape[1] :]
+    return t.corrcoef(combined.T)[: first.shape[1], first.shape[1] :]
 
 def __spearman_metric(first, second):
     if (first.dim(), second.dim()) == (1, 1):
