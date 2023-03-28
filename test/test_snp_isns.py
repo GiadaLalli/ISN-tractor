@@ -403,11 +403,11 @@ def test_on_genes_spearman():
         ), 
         pd.DataFrame(
             [
-                (-3.7,),
-                (0.3,),
-                (0.3,),
-                (1.1,),
-                (1.1,),
+                (-5.7,),
+                (0.7,),
+                (0.7,),
+                (-0.9,),
+                (-0.9,),
             ],
             columns=["gene_vcbc_gene_pipx"],
         ),
