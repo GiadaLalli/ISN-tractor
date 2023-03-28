@@ -227,14 +227,14 @@ def __pearson_metric(first: t.Tensor, second: t.Tensor) -> t.Tensor:
     if first.dim() == 1 and second.dim() == 1:
         combined = t.stack([first, second], dim=1)
     else:
-        combined = t.cat([first, second], axis=1)
+        combined = t.cat([first, second], dim=1)
     return t.corrcoef(combined.T)[: first.shape[1] - 1, first.shape[1] :]
 
 
 def __spearman_metric(first, second):
     first_sorted = t.argsort(first, dim=0)
     second_sorted = t.argsort(second, dim=0)
-    combined = t.cat([first_sorted, second_sorted], axis=1)
+    combined = t.cat([first_sorted, second_sorted], dim=1)
     return t.corrcoef(combined.T)[: first.shape[1] - 1, first.shape[1] :]
 
 
@@ -304,6 +304,7 @@ def __make_edge_fn(
 
     return make_edge
 
+
 def __identity(value: _FloatLike_co) -> _FloatLike_co:
     return value
 
@@ -314,7 +315,8 @@ def sparse_isn(
     interact_unmapped,
     interact_mapped,
     metric: Metric,
-    pool: Optional[Pooling] = None, device: Optional[t.device] = None,
+    pool: Optional[Pooling] = None,
+    device: Optional[t.device] = None,
 ):
     """
     Network computation guided by weighted edges given interaction relevance.
