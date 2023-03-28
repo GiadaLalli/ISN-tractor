@@ -242,7 +242,7 @@ def __spearman_metric(first, second):
         print(t.corrcoef(combined.T))
         return t.corrcoef(combined.T)[0,1]
 
-    first_sorted = t.argsort(first, dim=0)   
+    first_sorted = t.argsort(first, dim=0)
     second_sorted = t.argsort(second, dim=0)
     print(first_sorted)
     print(second_sorted)
