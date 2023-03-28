@@ -1,10 +1,11 @@
 import pytest
-from isn_tractor.ibisn import sparse_isn
+from isn_tractor.ibisn import sparse_isn, __spearman_metric
 
 from numpy import array, zeros
 import pandas as pd
 from pandas.testing import assert_frame_equal
 from sklearn.metrics import normalized_mutual_info_score as mutual_info
+import torch as t
 
 
 def my_mutual_info_metric(first, second):
@@ -454,6 +455,37 @@ def test_on_genes_spearman_stack_different_dimensions_bug():
                 "gene_james_gene_james",
             ],
         ),
+    )
+
+
+def test_spearman_fiddle():
+    first = t.tensor(
+        [
+            [0.1015, 0.0707, 0.1108, 0.6479],
+            [0.4688, 0.7204, 0.6506, 0.5650],
+            [0.6619, 0.4601, 0.6120, 0.6109],
+        ]
+    )
+    second = t.tensor(
+        [
+            [0.9352, 0.7916, 0.1136, 0.8020, 0.8635],
+            [0.1621, 0.9037, 0.9067, 0.3235, 0.5839],
+            [0.1721, 0.7333, 0.0643, 0.2700, 0.6233],
+        ]
+    )
+    res = __spearman_metric(first, second)
+    print(res)
+    assert t.tensor(True) == t.all(
+        t.eq(
+            res,
+            t.tensor(
+                [
+                    [-0.5, -0.5, -0.5, -1.0, -0.5],
+                    [0.5, -1.0, -1.0, -0.5, 0.5],
+                    [0.5, -1.0, -1.0, -0.5, 0.5],
+                ]
+            ),
+        )
     )
 
 
