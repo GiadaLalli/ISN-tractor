@@ -393,7 +393,7 @@ def test_on_genes_spearman():
         columns=["gene_vcbc", "gene_pipx"],
     )
     interact = pd.DataFrame([("gene_vcbc", "gene_pipx")], columns=["1", "2"])
-    print(sparse_isn(gene_data, interact_unmapped=None, interact_mapped=interact, metric="spearman")
+    print(sparse_isn(gene_data, interact_unmapped=None, interact_mapped=interact, metric="spearman"))
     assert_frame_equal(
         sparse_isn(
             gene_data,
