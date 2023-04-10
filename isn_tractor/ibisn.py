@@ -250,7 +250,8 @@ def __spearman_metric(first, second):
     return(corr)
 
 def __dot_metric(first, second):
-    return t.matmul(first.permute(*t.arange(first.ndim - 1, -1, -1)), second)
+    dot_prod = t.matmul(first.permute(*t.arange(first.ndim - 1, -1, -1)), second)
+    return dot_prod.float()
 
 
 # ## ISNs computation for SNP array
