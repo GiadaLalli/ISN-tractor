@@ -9,10 +9,12 @@ import torch as t
 
 
 def my_mutual_info_metric(first, second):
+    first = t.tensor(first)
+    second = t.tensor(second)
     if (first.dim(), second.dim()) == (1, 1):
         return mutual_info(first, second)
 
-    scores = zeros((first.shape[1], second.shape[1]))
+    scores = t.zeros((first.shape[1], second.shape[1]))
     for i in range(first.shape[1]):
         for j in range(second.shape[1]):
             scores[i, j] = mutual_info(first[:, i], second[:, j])
