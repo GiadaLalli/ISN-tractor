@@ -220,7 +220,7 @@ def map_interaction(
     )
 
 
-# ## Metrics for *unmapped discrete data -> to be changed*
+# ## Metrics for **unmapped discrete data
 
 def __pearson_metric(first: t.Tensor, second: t.Tensor) -> t.Tensor:
     if first.dim() == 1 and second.dim() == 1:
@@ -231,29 +231,26 @@ def __pearson_metric(first: t.Tensor, second: t.Tensor) -> t.Tensor:
     return t.corrcoef(combined.T)[: first.shape[1], first.shape[1]]
 
 def __spearman_metric(first, second):
-    if (first.dim(), second.dim()) == (1, 1):
-        first_sorted = t.argsort(first)
-        second_sorted = t.argsort(second)
-        print(first_sorted)
-        print(second_sorted)
-        combined = t.stack([first_sorted, second_sorted], dim=1)
-        print(combined)
-        print(t.corrcoef(combined.T).shape)
-        print(t.corrcoef(combined.T))
-        return t.corrcoef(combined.T)[0,1]
-
-    first_sorted = t.argsort(first, dim=0)
-    second_sorted = t.argsort(second, dim=0)
-    print(first_sorted)
-    print(second_sorted)
-    combined = t.cat([first_sorted, second_sorted], dim=1)
-    print(combined)
-    print(t.corrcoef(combined.T).shape)
-    print(t.corrcoef(combined.T))
-    return t.corrcoef(combined.T)[: first.shape[1], first.shape[1] :]
+    if first.ndim == 1 and second.ndim == 1:
+        data = t.stack((first, second), dim=1)
+        for i in range(data.shape[1]):
+            u, inv, counts = t.unique(data[:,i], return_inverse=True, return_counts=True)
+            csum = t.zeros_like(counts)
+            csum[1:] = counts[:-1].cumsum(dim=-1)
+            data[:,i] = csum[inv]
+        corr = t.corrcoef(data.T)[0, 1]
+    else:
+        data = t.cat((first, second), dim=1)
+        for i in range(data.shape[1]):
+            u, inv, counts = t.unique(data[:,i], return_inverse=True, return_counts=True)
+            csum = t.zeros_like(counts)
+            csum[1:] = counts[:-1].cumsum(dim=-1)
+            data[:,i] = csum[inv]
+        corr = t.corrcoef(data.T)[:first.shape[1], first.shape[1]:]
+    return(corr)
 
 def __dot_metric(first, second):
-    return t.matmul(first.permute(*t.arange(first.ndim - 1, -1, -1)), second).numpy()
+    return t.matmul(first.permute(*t.arange(first.ndim - 1, -1, -1)), second)
 
 
 # ## ISNs computation for SNP array
@@ -355,9 +352,9 @@ def sparse_isn(
     elif isinstance(pool, str):
         if (
             pooling_fn := {  # type: ignore[assignment]
-                "max": np.max,
-                "avg": np.mean,
-                "average": np.mean,
+                "max": t.max,
+                "avg": t.mean,
+                "average": t.mean,
             }.get(pool)
         ) is None:
             raise ValueError(f'"{pool}" is not a valid pooling method')
