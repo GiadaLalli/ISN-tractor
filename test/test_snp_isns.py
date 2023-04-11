@@ -6,7 +6,7 @@ import pandas as pd
 from pandas.testing import assert_frame_equal
 from sklearn.metrics import normalized_mutual_info_score as mutual_info
 import torch as t
-from scipy.stats import pearsonr
+from scipy.stats import pearsonr, spearmanr
 
 
 def my_mutual_info_metric(first, second):
@@ -28,6 +28,16 @@ def my_pearson_metric(first, second):
 
     combined = concatenate([first, second], axis=1)
     return t.tensor(corrcoef(combined.T)[: first.shape[1], first.shape[1]])
+
+
+def my_spearman_metric(first, second):
+    s = t.tensor(
+        spearmanr(first.numpy(), second.numpy()).statistic[
+            : first.shape[1], first.shape[1] :
+        ]
+    )
+    print(s)
+    return s
 
 
 def test_empty_inputs():
@@ -107,6 +117,11 @@ def test_snp_spearman_avg():
     interact_gene = pd.DataFrame(
         [("gene_vcbc", "gene_pipx")], columns=["gene_id_1", "gene_id_2"]
     )
+    computed = sparse_isn(snp_data, interact_snp, interact_gene, "spearman", "avg")
+    computed_old = sparse_isn(
+        snp_data, interact_snp, interact_gene, my_spearman_metric, "avg"
+    )
+    assert_frame_equal(computed, computed_old)
     assert_frame_equal(
         sparse_isn(snp_data, interact_snp, interact_gene, "spearman", "avg"),
         pd.DataFrame(
@@ -306,11 +321,11 @@ def test_snp_larger():
         computed,
         pd.DataFrame(
             [
-                (0.1098762, 0.1098762, 0.1098762, 0.1098762),
-                (0.847243, 0.8472431, 0.8472431, 0.8472431),
-                (-0.0930169, -0.0930169, -0.0930169, -0.0930169),
-                (0.6876522, 0.6876522, 0.6876522, 0.6876522),
-                (0.0056454, 0.0056454, 0.0056454, 0.0056454),
+                (0.3354356, 0.3354356, 0.3354356, 0.3354356),
+                (0.5798347, 0.5798347, 0.5798347, 0.5798347),
+                (0.2412484, 0.2412484, 0.2412484, 0.2412484),
+                (0.9778545, 0.9778545, 0.9778545, 0.9778545),
+                (0.3727278, 0.3727278, 0.3727278, 0.3727278),
             ],
             columns=[
                 "gene_a_gene_b",
