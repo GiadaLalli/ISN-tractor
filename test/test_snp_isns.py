@@ -1,11 +1,12 @@
 import pytest
 from isn_tractor.ibisn import sparse_isn, __spearman_metric
 
-from numpy import array, zeros
+from numpy import array, zeros, concatenate, corrcoef
 import pandas as pd
 from pandas.testing import assert_frame_equal
 from sklearn.metrics import normalized_mutual_info_score as mutual_info
 import torch as t
+from scipy.stats import pearsonr
 
 
 def my_mutual_info_metric(first, second):
@@ -19,6 +20,14 @@ def my_mutual_info_metric(first, second):
         for j in range(second.shape[1]):
             scores[i, j] = mutual_info(first[:, i], second[:, j])
     return scores
+
+
+def my_pearson_metric(first, second):
+    if (first.dim(), second.dim()) == (1, 1):
+        return t.tensor(pearsonr(first.numpy(), second.numpy()).statistic)
+
+    combined = concatenate([first, second], axis=1)
+    return t.tensor(corrcoef(combined.T)[: first.shape[1], first.shape[1]])
 
 
 def test_empty_inputs():
@@ -287,7 +296,11 @@ def test_snp_larger():
     )
 
     computed = sparse_isn(snp_data, interact_snp, interact_gene, "pearson", "average")
-    print(computed, flush=True)
+    computed_old = sparse_isn(
+        snp_data, interact_snp, interact_gene, my_pearson_metric, "average"
+    )
+
+    assert_frame_equal(computed, computed_old)
 
     assert_frame_equal(
         computed,
@@ -395,14 +408,21 @@ def test_on_genes_spearman():
         columns=["gene_vcbc", "gene_pipx"],
     )
     interact = pd.DataFrame([("gene_vcbc", "gene_pipx")], columns=["1", "2"])
-    print(sparse_isn(gene_data, interact_unmapped=None, interact_mapped=interact, metric="spearman"))
+    print(
+        sparse_isn(
+            gene_data,
+            interact_unmapped=None,
+            interact_mapped=interact,
+            metric="spearman",
+        )
+    )
     assert_frame_equal(
         sparse_isn(
             gene_data,
             interact_unmapped=None,
             interact_mapped=interact,
             metric="spearman",
-        ), 
+        ),
         pd.DataFrame(
             [
                 (-3.7,),
@@ -484,9 +504,9 @@ def test_spearman_fiddle():
             t.tensor(
                 [
                     [-0.5000, -0.5000, -0.5000, -1.0000, -0.5000],
-                    [-1.0000,  0.5000,  0.5000, -0.5000, -1.0000],
-                    [-1.0000,  0.5000,  0.5000, -0.5000, -1.0000],
-		    [ 1.0000, -0.5000, -0.5000,  0.5000,  1.0000],
+                    [-1.0000, 0.5000, 0.5000, -0.5000, -1.0000],
+                    [-1.0000, 0.5000, 0.5000, -0.5000, -1.0000],
+                    [1.0000, -0.5000, -0.5000, 0.5000, 1.0000],
                 ]
             ),
         )
