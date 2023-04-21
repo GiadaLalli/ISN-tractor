@@ -236,7 +236,7 @@ def __spearman_metric(first, second):
     if first.ndim == 1 and second.ndim == 1:
         data = t.stack((first, second), dim=1)
         for i in range(data.shape[1]):
-            u, inv, counts = t.unique(
+            _, inv, counts = t.unique(
                 data[:, i], return_inverse=True, return_counts=True
             )
             csum = t.zeros_like(counts)
@@ -246,7 +246,7 @@ def __spearman_metric(first, second):
     else:
         data = t.cat((first, second), dim=1)
         for i in range(data.shape[1]):
-            u, inv, counts = t.unique(
+            _, inv, counts = t.unique(
                 data[:, i], return_inverse=True, return_counts=True
             )
             csum = t.zeros_like(counts)
