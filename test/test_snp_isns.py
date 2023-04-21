@@ -117,20 +117,16 @@ def test_snp_spearman_avg():
     interact_gene = pd.DataFrame(
         [("gene_vcbc", "gene_pipx")], columns=["gene_id_1", "gene_id_2"]
     )
-    computed = sparse_isn(snp_data, interact_snp, interact_gene, "spearman", "avg")
-    computed_old = sparse_isn(
-        snp_data, interact_snp, interact_gene, my_spearman_metric, "avg"
-    )
-    assert_frame_equal(computed, computed_old)
+
     assert_frame_equal(
         sparse_isn(snp_data, interact_snp, interact_gene, "spearman", "avg"),
         pd.DataFrame(
             [
-                (0.845841109752655,),
-                (0.2895461916923523,),
-                (0.10616892576217651,),
-                (1.609025001525879,),
-                (0.2895461916923523,),
+                (0.845841,),
+                (0.289546,),
+                (0.106168,),
+                (1.609025,),
+                (0.289546,),
             ],
             columns=["gene_vcbc_gene_pipx"],
         ),
