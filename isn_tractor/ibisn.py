@@ -419,11 +419,6 @@ def dense_isn(
     dense.iloc[:, 0] = np.repeat(net.columns.values, net.columns.size)
     dense.iloc[:, 1] = np.tile(net.columns.values, data.shape[0])
 
-    if device:
-        device = t.device("cuda" if t.cuda.is_available() else "cpu")
-    else:
-        device = t.device("cpu")
-
     for i in range(num_samples):
         values = (
             metric_fn(t.tensor(np.delete(data.T.to_numpy(), i, 0)).to(device))
