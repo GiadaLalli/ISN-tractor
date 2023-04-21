@@ -36,4 +36,4 @@ build-backend = "poetry.core.masonry.api"
 ignore_missing_imports = true
 
 [tool.pylint]
-generated-members = "t.tensor,t.matmul,t.arange,t.corrcoef,t.cat,t.argsort,t.zeros,t.device,t.square,t.from_numpy,t.mean,t.stack"
+generated-members = "t.tensor,t.matmul,t.arange,t.corrcoef,t.cat,t.argsort,t.zeros,t.device,t.square,t.from_numpy,t.mean,t.stack,t.max"
