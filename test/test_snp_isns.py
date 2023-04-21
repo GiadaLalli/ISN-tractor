@@ -10,10 +10,8 @@ from scipy.stats import pearsonr, spearmanr
 
 
 def my_mutual_info_metric(first, second):
-    first = t.tensor(first)
-    second = t.tensor(second)
     if (first.dim(), second.dim()) == (1, 1):
-        return mutual_info(first, second)
+        return mutual_info(first.numpy(), second.numpy())
 
     scores = t.zeros((first.shape[1], second.shape[1]))
     for i in range(first.shape[1]):
