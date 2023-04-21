@@ -1,11 +1,12 @@
 import pytest
 from isn_tractor.ibisn import sparse_isn, __spearman_metric
 
-from numpy import array, zeros
+from numpy import array, zeros, concatenate, corrcoef
 import pandas as pd
 from pandas.testing import assert_frame_equal
 from sklearn.metrics import normalized_mutual_info_score as mutual_info
 import torch as t
+from scipy.stats import pearsonr, spearmanr
 
 
 def my_mutual_info_metric(first, second):
@@ -19,6 +20,24 @@ def my_mutual_info_metric(first, second):
         for j in range(second.shape[1]):
             scores[i, j] = mutual_info(first[:, i], second[:, j])
     return scores
+
+
+def my_pearson_metric(first, second):
+    if (first.dim(), second.dim()) == (1, 1):
+        return t.tensor(pearsonr(first.numpy(), second.numpy()).statistic)
+
+    combined = concatenate([first, second], axis=1)
+    return t.tensor(corrcoef(combined.T)[: first.shape[1], first.shape[1]])
+
+
+def my_spearman_metric(first, second):
+    s = t.tensor(
+        spearmanr(first.numpy(), second.numpy()).statistic[
+            : first.shape[1], first.shape[1] :
+        ]
+    )
+    print(s)
+    return s
 
 
 def test_empty_inputs():
@@ -98,6 +117,11 @@ def test_snp_spearman_avg():
     interact_gene = pd.DataFrame(
         [("gene_vcbc", "gene_pipx")], columns=["gene_id_1", "gene_id_2"]
     )
+    computed = sparse_isn(snp_data, interact_snp, interact_gene, "spearman", "avg")
+    computed_old = sparse_isn(
+        snp_data, interact_snp, interact_gene, my_spearman_metric, "avg"
+    )
+    assert_frame_equal(computed, computed_old)
     assert_frame_equal(
         sparse_isn(snp_data, interact_snp, interact_gene, "spearman", "avg"),
         pd.DataFrame(
@@ -287,17 +311,29 @@ def test_snp_larger():
     )
 
     computed = sparse_isn(snp_data, interact_snp, interact_gene, "pearson", "average")
-    print(computed, flush=True)
+    computed_old = sparse_isn(
+        snp_data, interact_snp, interact_gene, my_pearson_metric, "average"
+    )
+
+    assert_frame_equal(computed, computed_old)
 
     assert_frame_equal(
         computed,
         pd.DataFrame(
             [
+<<<<<<< HEAD
                 (0.335436, 0.335436, 0.335436, 0.335436),
                 (0.579835, 0.579835, 0.579835, 0.579835),
                 (0.241248, 0.241248, 0.241248, 0.241248),
                 (0.977854, 0.977854, 0.977854, 0.977854),
                 (0.372728, 0.372728, 0.372728, 0.372728),
+=======
+                (0.3354356, 0.3354356, 0.3354356, 0.3354356),
+                (0.5798347, 0.5798347, 0.5798347, 0.5798347),
+                (0.2412484, 0.2412484, 0.2412484, 0.2412484),
+                (0.9778545, 0.9778545, 0.9778545, 0.9778545),
+                (0.3727278, 0.3727278, 0.3727278, 0.3727278),
+>>>>>>> 91cdc20baa6e6d8dfd3ddde2b5b52beceee9199d
             ],
             columns=[
                 "gene_a_gene_b",
@@ -395,14 +431,21 @@ def test_on_genes_spearman():
         columns=["gene_vcbc", "gene_pipx"],
     )
     interact = pd.DataFrame([("gene_vcbc", "gene_pipx")], columns=["1", "2"])
-    print(sparse_isn(gene_data, interact_unmapped=None, interact_mapped=interact, metric="spearman"))
+    print(
+        sparse_isn(
+            gene_data,
+            interact_unmapped=None,
+            interact_mapped=interact,
+            metric="spearman",
+        )
+    )
     assert_frame_equal(
         sparse_isn(
             gene_data,
             interact_unmapped=None,
             interact_mapped=interact,
             metric="spearman",
-        ), 
+        ),
         pd.DataFrame(
             [
                 (-3.7,),
@@ -484,9 +527,9 @@ def test_spearman_fiddle():
             t.tensor(
                 [
                     [-0.5000, -0.5000, -0.5000, -1.0000, -0.5000],
-                    [-1.0000,  0.5000,  0.5000, -0.5000, -1.0000],
-                    [-1.0000,  0.5000,  0.5000, -0.5000, -1.0000],
-		    [ 1.0000, -0.5000, -0.5000,  0.5000,  1.0000],
+                    [-1.0000, 0.5000, 0.5000, -0.5000, -1.0000],
+                    [-1.0000, 0.5000, 0.5000, -0.5000, -1.0000],
+                    [1.0000, -0.5000, -0.5000, 0.5000, 1.0000],
                 ]
             ),
         )
