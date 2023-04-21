@@ -321,19 +321,11 @@ def test_snp_larger():
         computed,
         pd.DataFrame(
             [
-<<<<<<< HEAD
-                (0.335436, 0.335436, 0.335436, 0.335436),
-                (0.579835, 0.579835, 0.579835, 0.579835),
-                (0.241248, 0.241248, 0.241248, 0.241248),
-                (0.977854, 0.977854, 0.977854, 0.977854),
-                (0.372728, 0.372728, 0.372728, 0.372728),
-=======
                 (0.3354356, 0.3354356, 0.3354356, 0.3354356),
                 (0.5798347, 0.5798347, 0.5798347, 0.5798347),
                 (0.2412484, 0.2412484, 0.2412484, 0.2412484),
                 (0.9778545, 0.9778545, 0.9778545, 0.9778545),
                 (0.3727278, 0.3727278, 0.3727278, 0.3727278),
->>>>>>> 91cdc20baa6e6d8dfd3ddde2b5b52beceee9199d
             ],
             columns=[
                 "gene_a_gene_b",
@@ -431,14 +423,6 @@ def test_on_genes_spearman():
         columns=["gene_vcbc", "gene_pipx"],
     )
     interact = pd.DataFrame([("gene_vcbc", "gene_pipx")], columns=["1", "2"])
-    print(
-        sparse_isn(
-            gene_data,
-            interact_unmapped=None,
-            interact_mapped=interact,
-            metric="spearman",
-        )
-    )
     assert_frame_equal(
         sparse_isn(
             gene_data,
