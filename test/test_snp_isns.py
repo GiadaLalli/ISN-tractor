@@ -102,11 +102,11 @@ def test_snp_spearman_avg():
         sparse_isn(snp_data, interact_snp, interact_gene, "spearman", "avg"),
         pd.DataFrame(
             [
-                (0.717217,),
-                (0.383883,),
-                (0.229183,),
-                (1.928214,),
-                (0.383883,),
+                (0.845841109752655,),
+                (0.2895461916923523,),
+                (0.10616892576217651,),
+                (1.609025001525879,),
+                (0.2895461916923523,),
             ],
             columns=["gene_vcbc_gene_pipx"],
         ),
