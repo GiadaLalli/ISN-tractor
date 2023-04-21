@@ -7,8 +7,6 @@ from typing import Union, Literal, Tuple, List, Any, Callable, Optional
 import pandas as pd
 import numpy as np
 from numpy._typing import _ArrayLikeFloat_co, _FloatLike_co
-from scipy.stats import pearsonr, spearmanr
-from sklearn.metrics import normalized_mutual_info_score as mutual_info
 import torch as t
 
 MetricFn = Callable[
@@ -24,7 +22,6 @@ PoolingFn = Callable[
 Metric = Union[
     Literal["pearson"],
     Literal["spearman"],
-    Literal["mutual_info"],
     Literal["dot"],
     MetricFn,
 ]
@@ -223,34 +220,45 @@ def map_interaction(
     )
 
 
-# ## Metrics for unmapped discrete data
+# ## Metrics for **unmapped discrete data
 
 
-def __pearson_metric(first, second):
-    if (first.dim(), second.dim()) == (1, 1):
-        return pearsonr(first, second).statistic
+def __pearson_metric(first: t.Tensor, second: t.Tensor) -> t.Tensor:
+    if first.dim() == 1 and second.dim() == 1:
+        combined = t.stack([first, second], dim=1)
+        return t.corrcoef(combined.T)[0, 1]
 
-    combined = np.concatenate([first, second], axis=1)
-    return np.corrcoef(combined.T)[: first.shape[1] - 1, first.shape[1] :]
+    combined = t.cat([first, second], dim=1)
+    return t.corrcoef(combined.T)[: first.shape[1], first.shape[1]]
 
 
 def __spearman_metric(first, second):
-    return spearmanr(first, second).statistic
-
-
-def __mutual_info_metric(first, second):
-    if (first.dim(), second.dim()) == (1, 1):
-        return mutual_info(first, second)
-
-    scores = np.zeros((first.shape[1], second.shape[1]))
-    for i in range(first.shape[1]):
-        for j in range(second.shape[1]):
-            scores[i, j] = mutual_info(first[:, i], second[:, j])
-    return scores
+    if first.ndim == 1 and second.ndim == 1:
+        data = t.stack((first, second), dim=1)
+        for i in range(data.shape[1]):
+            _, inv, counts = t.unique(
+                data[:, i], return_inverse=True, return_counts=True
+            )
+            csum = t.zeros_like(counts)
+            csum[1:] = counts[:-1].cumsum(dim=-1)
+            data[:, i] = csum[inv]
+        corr = t.corrcoef(data.T)[0, 1]
+    else:
+        data = t.cat((first, second), dim=1)
+        for i in range(data.shape[1]):
+            _, inv, counts = t.unique(
+                data[:, i], return_inverse=True, return_counts=True
+            )
+            csum = t.zeros_like(counts)
+            csum[1:] = counts[:-1].cumsum(dim=-1)
+            data[:, i] = csum[inv]
+        corr = t.corrcoef(data.T)[: first.shape[1], first.shape[1] :]
+    return corr
 
 
 def __dot_metric(first, second):
-    return t.matmul(first.permute(*t.arange(first.ndim - 1, -1, -1)), second).numpy()
+    dot_prod = t.matmul(first.permute(*t.arange(first.ndim - 1, -1, -1)), second)
+    return dot_prod.float()
 
 
 # ## ISNs computation for SNP array
@@ -270,8 +278,8 @@ def __isn_edge(
         result = []
 
         for indx in range(first.shape[0]):
-            loo_1 = t.tensor(np.delete(first, indx, axis=0))
-            loo_2 = t.tensor(np.delete(second, indx, axis=0))
+            loo_1 = t.cat((first[:indx], first[indx + 1 :]))
+            loo_2 = t.cat((second[:indx], second[indx + 1 :]))
             avg = pool(metric(loo_1, loo_2))
             result.append(rows * (glob - avg) + avg)  # type: ignore[call-overload,operator]
 
@@ -284,7 +292,12 @@ def __make_array(*xs):
     return np.array(xs, dtype=object)
 
 
-def __make_edge_fn(data, metric_fn: MetricFn, pool_fn: PoolingFn):
+def __make_edge_fn(
+    data,
+    metric_fn: MetricFn,
+    pool_fn: PoolingFn,
+    device: Optional[t.device] = None,
+):
     edge = __isn_edge(metric_fn, pool_fn)
 
     def make_edge(assoc_1, assoc_2):
@@ -304,8 +317,8 @@ def __make_edge_fn(data, metric_fn: MetricFn, pool_fn: PoolingFn):
         )
 
         return edge(
-            t.tensor(intersection_1.values),
-            t.tensor(intersection_2.values),
+            t.tensor(intersection_1.values, device=device),
+            t.tensor(intersection_2.values, device=device),
         )
 
     return make_edge
@@ -315,26 +328,30 @@ def __identity(value: _FloatLike_co) -> _FloatLike_co:
     return value
 
 
+# pylint: disable=too-many-arguments
 def sparse_isn(
     data,
     interact_unmapped,
     interact_mapped,
     metric: Metric,
     pool: Optional[Pooling] = None,
+    device: Optional[t.device] = None,
 ):
     """
     Network computation guided by weighted edges given interaction relevance.
-    """
-    if metric not in ["pearson", "spearman", "mutual_info", "dot"]:
-        raise ValueError(f'"{metric}" is not a valid metric')
 
+    Specify the pyTorch device on which computation should take place. For example, pass:
+    `device=t.device("cuda")` to run on the 'current' CUDA device.
+    """
     if isinstance(metric, str):
-        metric_fn = {
-            "pearson": __pearson_metric,
-            "spearman": __spearman_metric,
-            "mutual_info": __mutual_info_metric,
-            "dot": __dot_metric,
-        }.get(metric)
+        if (
+            metric_fn := {
+                "pearson": __pearson_metric,
+                "spearman": __spearman_metric,
+                "dot": __dot_metric,
+            }.get(metric)
+        ) is None:
+            raise ValueError(f'"{metric}" is not a valid metric')
     else:
         metric_fn = metric
 
@@ -343,9 +360,9 @@ def sparse_isn(
     elif isinstance(pool, str):
         if (
             pooling_fn := {  # type: ignore[assignment]
-                "max": np.max,
-                "avg": np.mean,
-                "average": np.mean,
+                "max": t.max,
+                "avg": t.mean,
+                "average": t.mean,
             }.get(pool)
         ) is None:
             raise ValueError(f'"{pool}" is not a valid pooling method')
@@ -361,7 +378,7 @@ def sparse_isn(
     assert metric_fn is not None
     assert pooling_fn is not None
 
-    isn_edge = __make_edge_fn(data, metric_fn, pooling_fn)
+    isn_edge = __make_edge_fn(data, metric_fn, pooling_fn, device=device)
 
     return pd.DataFrame(
         np.column_stack([isn_edge(*assoc) for assoc in interact]),
@@ -376,7 +393,11 @@ def __dense_metric(method: str):
     return metric
 
 
-def dense_isn(data: pd.DataFrame, metric: Metric):
+def dense_isn(
+    data: pd.DataFrame,
+    metric: Metric,
+    device: Optional[t.device] = None,
+):
     """
     Network computation based on the Lioness algorithm
     """
@@ -399,9 +420,12 @@ def dense_isn(data: pd.DataFrame, metric: Metric):
     dense.iloc[:, 1] = np.tile(net.columns.values, data.shape[0])
 
     for i in range(num_samples):
-        values = metric_fn(
-            pd.DataFrame(np.delete(data.T.to_numpy(), i, 0))
-        ).values.flatten()
+        values = (
+            metric_fn(t.tensor(np.delete(data.T.to_numpy(), i, 0)).to(device))
+            .cpu()
+            .numpy()
+            .flatten()
+        )
         dense.iloc[:, i + 2] = num_samples * (agg - values) + values
 
     return dense
