@@ -5,7 +5,7 @@ import torch as t
 import time
 import matplotlib.pyplot as plt
 
-''' This code is to be readapted also for other metrics. In the example 
+""" This code is to be readapted also for other metrics. In the example 
 below, it is benchmarking 4 different Pearson implementations - Numpy, 
 Pandas, Scipy, PyTorch - always using 2D inputs (arrays, dataframes, 
 tensors) of different shapes; the choice of using differently shaped 
@@ -33,20 +33,29 @@ same-shape and not, and 1D) for both processing units
 
 This will be just a plot to be inserted in Supplementary Materials to 
 demonstrate that switching to PyTorch makes sense to the overall computation.
-'''
+"""
 
 # Define input sizes
-sizes = [(10, 5), (10, 10), (10, 50), (10, 100), (100, 5), (100, 10), (100, 50), (100, 100)]
+sizes = [
+    (10, 5),
+    (10, 10),
+    (10, 50),
+    (10, 100),
+    (100, 5),
+    (100, 10),
+    (100, 50),
+    (100, 100),
+]
 
 # Initialize empty lists for results and colors
 results = []
-colors = ['r', 'g', 'b', 'y']
+colors = ["r", "g", "b", "y"]
 
 # Loop over input sizes and implementations
 for size in sizes:
     X = np.random.rand(*size)
-    Y = np.random.rand(size[0], size[1]*2 if size[1] < 500 else size[1]*5)
-    first = t.from_numpy(X)  
+    Y = np.random.rand(size[0], size[1] * 2 if size[1] < 500 else size[1] * 5)
+    first = t.from_numpy(X)
     second = t.from_numpy(Y)
 
     # Benchmark Pearson Scipy
@@ -71,28 +80,59 @@ for size in sizes:
     pandas_time = time.time() - start_time
 
     # Benchmark Pearson Torch
-    start_time = time.time() 
+    start_time = time.time()
     combined = t.cat([first, second], dim=1)
     pearson_torch = t.corrcoef(combined.T)[: first.shape[1], first.shape[1]]
     torch_time = time.time() - start_time
 
     # Append results to list
-    results.append({'Implementation': 'Scipy', 'Time (s)': scipy_time, 'Input Shape': f'{X.shape} and {Y.shape}'})
-    results.append({'Implementation': 'Numpy', 'Time (s)': numpy_time, 'Input Shape': f'{X.shape} and {Y.shape}'})
-    results.append({'Implementation': 'Pandas', 'Time (s)': pandas_time, 'Input Shape': f'{df_X.shape} and {df_Y.shape}'})
-    results.append({'Implementation': 'Torch', 'Time (s)': torch_time, 'Input Shape': f'{X.shape} and {Y.shape}'})
+    results.append(
+        {
+            "Implementation": "Scipy",
+            "Time (s)": scipy_time,
+            "Input Shape": f"{X.shape} and {Y.shape}",
+        }
+    )
+    results.append(
+        {
+            "Implementation": "Numpy",
+            "Time (s)": numpy_time,
+            "Input Shape": f"{X.shape} and {Y.shape}",
+        }
+    )
+    results.append(
+        {
+            "Implementation": "Pandas",
+            "Time (s)": pandas_time,
+            "Input Shape": f"{df_X.shape} and {df_Y.shape}",
+        }
+    )
+    results.append(
+        {
+            "Implementation": "Torch",
+            "Time (s)": torch_time,
+            "Input Shape": f"{X.shape} and {Y.shape}",
+        }
+    )
 
 # Create table of results
 results_table = pd.DataFrame(results)
 print("\n", results_table)
 
 # Create plot of results
-fig, ax = plt.subplots(figsize=(20,10))
-for i, impl in enumerate(['Scipy', 'Numpy', 'Pandas', 'Torch']):
-    impl_results = results_table[results_table['Implementation'] == impl]
-    ax.plot(impl_results['Input Shape'], impl_results['Time (s)'], marker='o', color=colors[i], label=impl)
-plt.xticks(rotation=45, ha='right')
-plt.legend(loc='center left', bbox_to_anchor=(1, 0.5),
-          fancybox=True, shadow=True, ncol=5)
-ax.set_title('Pearson Implementation Benchmarking on CPU')
+fig, ax = plt.subplots(figsize=(20, 10))
+for i, impl in enumerate(["Scipy", "Numpy", "Pandas", "Torch"]):
+    impl_results = results_table[results_table["Implementation"] == impl]
+    ax.plot(
+        impl_results["Input Shape"],
+        impl_results["Time (s)"],
+        marker="o",
+        color=colors[i],
+        label=impl,
+    )
+plt.xticks(rotation=45, ha="right")
+plt.legend(
+    loc="center left", bbox_to_anchor=(1, 0.5), fancybox=True, shadow=True, ncol=5
+)
+ax.set_title("Pearson Implementation Benchmarking on CPU")
 ax
