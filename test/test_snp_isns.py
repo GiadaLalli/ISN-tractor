@@ -1,7 +1,7 @@
 import pytest
-from isn_tractor.ibisn import sparse_isn, __spearman_metric
+from isn_tractor.ibisn import sparse_isn, dense_isn, __spearman_metric
 
-from numpy import array, zeros, concatenate, corrcoef
+from numpy import array, zeros, concatenate, corrcoef, int64, float32
 import pandas as pd
 from pandas.testing import assert_frame_equal
 from sklearn.metrics import normalized_mutual_info_score as mutual_info
@@ -535,3 +535,66 @@ def test_on_genes_dot():
             columns=["gene_vcbc_gene_pipx"],
         ),
     )
+
+
+def test_dense():
+    snp_data = pd.DataFrame(
+        [
+            (10, 5),
+            (1, 2),
+            (2, 1),
+            (1, 0),
+            (1, 2),
+            (1, 0),
+        ],  # TODO: Why does a (0, 0) row produce NaNs?
+        columns=["snp_jcstj", "snp_dvxkv"],
+    )
+
+    expected = pd.DataFrame(
+        [
+            (0, 0, 1.0, 1.0),
+            (0, 1, -3.0, -3.0),
+            (0, 2, 1.0, 1.0),
+            (0, 3, 1.0, 1.0),
+            (0, 4, -3.0, -3.0),
+            (0, 5, 1.0, 1.0),
+            (1, 0, -3.0, -3.0),
+            (1, 1, 1.0, 1.0),
+            (1, 2, -3.0, -3.0),
+            (1, 3, -3.0, -3.0),
+            (1, 4, 1.0, 1.0),
+            (1, 5, -3.0, -3.0),
+            (2, 0, 1.0, 1.0),
+            (2, 1, -3.0, -3.0),
+            (2, 2, 1.0, 1.0),
+            (2, 3, 1.0, 1.0),
+            (2, 4, -3.0, -3.0),
+            (2, 5, 1.0, 1.0),
+            (3, 0, 1.0, 1.0),
+            (3, 1, -3.0, -3.0),
+            (3, 2, 1.0, 1.0),
+            (3, 3, 1.0, 1.0),
+            (3, 4, -3.0, -3.0),
+            (3, 5, 1.0, 1.0),
+            (4, 0, -3.0, -3.0),
+            (4, 1, 1.0, 1.0),
+            (4, 2, -3.0, -3.0),
+            (4, 3, -3.0, -3.0),
+            (4, 4, 1.0, 1.0),
+            (4, 5, -3.0, -3.0),
+            (5, 0, 1.0, 1.0),
+            (5, 1, -3.0, -3.0),
+            (5, 2, 1.0, 1.0),
+            (5, 3, 1.0, 1.0),
+            (5, 4, -3.0, -3.0),
+            (5, 5, 1.0, 1.0),
+        ],
+        columns=["reg", "tar", "snp_jcstj", "snp_dvxkv"],
+    )
+
+    expected["snp_jcstj"] = expected["snp_jcstj"].astype(float32)
+    expected["snp_dvxkv"] = expected["snp_dvxkv"].astype(float32)
+
+    new = dense_isn(snp_data.copy(), metric="pearson")
+
+    assert_frame_equal(expected, new)
