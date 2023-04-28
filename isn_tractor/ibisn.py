@@ -387,8 +387,8 @@ def sparse_isn(
 
 
 def __dense_metric(method: str):
-    def metric(data: pd.DataFrame):
-        return data.corr(method=method)  # type: ignore[arg-type]
+    def metric(data: t.Tensor):
+        return t.corrcoef(data)
 
     return metric
 
@@ -408,16 +408,17 @@ def dense_isn(
         metric_fn = __dense_metric(metric)
     else:
         metric_fn = metric  # type: ignore[assignment]
-    net = metric_fn(data.T)
-    agg = net.to_numpy().flatten()
+    data_T = data.T
+    net = metric_fn(t.tensor(data.to_numpy()))
+    agg = net.numpy().flatten()
 
     dense = pd.DataFrame(
         np.nan,
         index=np.arange(data.shape[0] * data.shape[0]),
         columns=["reg", "tar"] + list(samples),
     ).astype(object)
-    dense.iloc[:, 0] = np.repeat(net.columns.values, net.columns.size)
-    dense.iloc[:, 1] = np.tile(net.columns.values, data.shape[0])
+    dense.iloc[:, 0] = np.repeat(data_T.columns.values, data.shape[0])
+    dense.iloc[:, 1] = np.tile(data_T.columns.values, data.shape[0])
 
     for i in range(num_samples):
         values = (
