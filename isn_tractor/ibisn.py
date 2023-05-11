@@ -395,38 +395,32 @@ def __dense_metric():
 
 def dense_isn(
     data: pd.DataFrame,
-    metric: Metric,
     device: Optional[t.device] = None,
 ):
     """
     Network computation based on the Lioness algorithm
     """
-    num_samples = data.shape[1]
-    samples = data.columns
-
-    if isinstance(metric, str):
-        metric_fn = __dense_metric()
-    else:
-        metric_fn = metric  # type: ignore[assignment]
-    data_transpose = data.T
-    net = metric_fn(t.tensor(data.to_numpy()))
-    agg = net.numpy().flatten()
-
-    dense = pd.DataFrame(
+    N = data.shape[0]
+    dot_prod = np.dot(data.T, data)
+    mean_vect = np.sum(data, axis=0)
+    std_vect = np.sum(data**2, axis=0)
+    glob_net = np.corrcoef(data.T)
+    df = pd.DataFrame(
         np.nan,
-        index=np.arange(data.shape[0] * data.shape[0]),
-        columns=["reg", "tar"] + list(samples),
-    ).astype(object)
-    dense.iloc[:, 0] = np.repeat(data_transpose.columns.values, data.shape[0])
-    dense.iloc[:, 1] = np.tile(data_transpose.columns.values, data.shape[0])
-
-    for i in range(num_samples):
-        values = (
-            metric_fn(t.tensor(np.delete(data.T.to_numpy(), i, 0)).to(device))
-            .cpu()
-            .numpy()
-            .flatten()
-        )
-        dense.iloc[:, i + 2] = num_samples * (agg - values) + values
-
-    return dense
+        index=np.arange(data.shape[0]),
+        columns= np.arange(data.shape[1]**2),
+    ).astype(np.float32)
+    interact = zip(np.repeat(data.columns.values, data.shape[1]), np.tile(data.columns.values, data.shape[1]))
+    df.columns = [a+'_'+b for a,b in interact]
+    
+    for i in range(data.shape[0]):
+        Sq = np.outer(data.iloc[i,:],data.iloc[i,:])
+        Cq = np.outer(mean_vect-data.iloc[i,:],mean_vect-data.iloc[i,:])
+        Dq = np.sqrt((N-1)*(std_vect - data.iloc[i,:]**2)-(mean_vect-data.iloc[i,:])**2)
+        nom = (N-1)*(dot_prod-Sq)-Cq
+        den = (np.outer(Dq.T, Dq))
+        result = (nom/den)
+        final_result = (N*glob_net)-((N-1)*result)
+        df.iloc[i, :] = final_result.flatten()
+        
+    return df
