@@ -392,7 +392,7 @@ def __dense_metric():
 
     return metric
 
-
+# pylint: disable=too-many-locals,invalid-name,unused-argument
 def dense_isn(
     data: pd.DataFrame,
     device: Optional[t.device] = None,
@@ -401,26 +401,35 @@ def dense_isn(
     Network computation based on the Lioness algorithm
     """
     N = data.shape[0]
-    dot_prod = np.dot(data.T, data)
-    mean_vect = np.sum(data, axis=0)
-    std_vect = np.sum(data**2, axis=0)
-    glob_net = np.corrcoef(data.T)
+    dot_prod = t.matmul(t.tensor(data.T.to_numpy()), t.tensor(data.to_numpy()))
+    mean_vect = t.sum(t.tensor(data.to_numpy()), dim=0)
+    std_vect = t.sum(t.tensor((data**2).to_numpy()), dim=0)
+    glob_net = t.corrcoef(t.tensor(data.T.to_numpy()))
+
     df = pd.DataFrame(
         np.nan,
         index=np.arange(data.shape[0]),
-        columns= np.arange(data.shape[1]**2),
-    ).astype(np.float32)
-    interact = zip(np.repeat(data.columns.values, data.shape[1]), np.tile(data.columns.values, data.shape[1]))
-    df.columns = [a+'_'+b for a,b in interact]
-    
+        columns=np.arange(data.shape[1] ** 2),
+    ).astype(np.float64)
+    interact = zip(
+        np.repeat(data.columns.values, data.shape[1]),
+        np.tile(data.columns.values, data.shape[1]),
+    )
+    df.columns = [a + "_" + b for a, b in interact]
+
     for i in range(data.shape[0]):
-        Sq = np.outer(data.iloc[i,:],data.iloc[i,:])
-        Cq = np.outer(mean_vect-data.iloc[i,:],mean_vect-data.iloc[i,:])
-        Dq = np.sqrt((N-1)*(std_vect - data.iloc[i,:]**2)-(mean_vect-data.iloc[i,:])**2)
-        nom = (N-1)*(dot_prod-Sq)-Cq
-        den = (np.outer(Dq.T, Dq))
-        result = (nom/den)
-        final_result = (N*glob_net)-((N-1)*result)
-        df.iloc[i, :] = final_result.flatten()
-        
+        Sq = t.outer(t.tensor(data.iloc[i, :]), t.tensor(data.iloc[i, :]))
+        Cq = t.outer(
+            mean_vect - t.tensor(data.iloc[i, :]), mean_vect - t.tensor(data.iloc[i, :])
+        )
+        Dq = t.sqrt(
+            (N - 1) * (std_vect - t.tensor(data.iloc[i, :] ** 2))
+            - t.pow(mean_vect - t.tensor(data.iloc[i, :]), 2)
+        )
+        nom = (N - 1) * (dot_prod - Sq) - Cq
+        den = t.outer(Dq, Dq)
+        result = nom / den
+        final_result = (N * glob_net) - ((N - 1) * result)
+        df.iloc[i, :] = final_result.numpy().flatten().astype(np.float64)
+
     return df
