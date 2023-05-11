@@ -26,20 +26,20 @@ def incremental_pearson(data):
     glob_net = np.corrcoef(data.T)
     df = pd.DataFrame(
         np.nan,
-        index=np.arange(data.shape[1] * data.shape[1]),
-        columns=["reg", "tar"] + list(data.index),
-    ).astype(object)
-    df.iloc[:, 0] = np.repeat(data.columns.values, data.shape[1])
-    df.iloc[:, 1] = np.tile(data.columns.values, data.shape[1])
+        index=np.arange(data.shape[0]),
+        columns= np.arange(data.shape[1]**2),
+    ).astype(np.float32)
+    interact = zip(np.repeat(data.columns.values, data.shape[1]), np.tile(data.columns.values, data.shape[1]))
+    df.columns = [a+'_'+b for a,b in interact]
     
     for i in range(data.shape[0]):
         Sq = np.outer(data.iloc[i,:],data.iloc[i,:])
         Cq = np.outer(mean_vect-data.iloc[i,:],mean_vect-data.iloc[i,:])
         Dq = np.sqrt((N-1)*(std_vect - data.iloc[i,:]**2)-(mean_vect-data.iloc[i,:])**2)
-        nom = (N-1)*(S-Sq)-Cq
+        nom = (N-1)*(dot_prod-Sq)-Cq
         den = (np.outer(Dq.T, Dq))
         result = (nom/den)
         final_result = (N*glob_net)-((N-1)*result)
-        df.iloc[:, i + 2] = final_result.flatten()
+        df.iloc[i, :] = final_result.flatten()
         
     return df
