@@ -580,6 +580,5 @@ def test_dense():
         expected[x] = expected[x].astype(float64)
    
     new = dense_isn(gene_data.copy())
-    print(new[0].compare(expected[0]))
     assert_frame_equal(expected, new)
 
