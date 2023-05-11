@@ -1,7 +1,7 @@
 import pytest
 from isn_tractor.ibisn import sparse_isn, dense_isn, __spearman_metric
 
-from numpy import array, zeros, concatenate, corrcoef, int64, float32
+from numpy import array, zeros, concatenate, corrcoef, int64, float32, float64
 import pandas as pd
 from pandas.testing import assert_frame_equal
 from sklearn.metrics import normalized_mutual_info_score as mutual_info
@@ -576,9 +576,10 @@ def test_dense():
         ],
     )
 
-    # expected["snp_jcstj"] = expected["snp_jcstj"].astype(float32)
-    # expected["snp_dvxkv"] = expected["snp_dvxkv"].astype(float32)
-
-    new = dense_isn(gene_data.copy(), metric="pearson")
-
+    for x in expected.columns:
+        expected[x] = expected[x].astype(float64)
+   
+    new = dense_isn(gene_data.copy())
+    print(new[0].compare(expected[0]))
     assert_frame_equal(expected, new)
+
