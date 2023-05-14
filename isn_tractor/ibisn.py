@@ -400,28 +400,30 @@ def dense_isn(
     """
     Network computation based on the Lioness algorithm
     """
-    num_samples = data.shape[0]
+    num_samples = t.tensor(data.shape[0])
     orig = t.tensor(data.to_numpy(), device=device)
     orig_transpose = t.tensor(data.T.to_numpy(), device=device)
     dot_prod = t.matmul(orig_transpose, orig)
     mean_vect = t.sum(orig, dim=0)
     std_vect = t.sum(t.pow(orig, 2), dim=0)
-    glob_net = t.corrcoef(orig_transpose)
+    glob_net = num_samples * t.corrcoef(orig_transpose)
 
-    def edge(i: int) -> t.Tensor:
-        mean = mean_vect - orig[i]
-        d_q = t.sqrt(
-            (num_samples - 1) * (std_vect - t.pow(orig[i], 2)) - t.pow(mean, 2)
-        )
-        nom = (num_samples - 1) * (dot_prod - t.outer(orig[i], orig[i])) - t.outer(
-            mean, mean
-        )
-        return t.flatten(
-            (num_samples * glob_net) - ((num_samples - 1) * (nom / t.outer(d_q, d_q)))
-        )
+    @t.jit.script
+    def edge(num, mean_v, std_v, dot, glob, row):
+        mean = mean_v - row
+        d_q = t.sqrt((num - 1) * (std_v - t.pow(row, 2)) - t.pow(mean, 2))
+        nom = (num - 1) * (dot - t.outer(row, row)) - t.outer(mean, mean)
+        return t.flatten(glob - ((num - 1) * (nom / t.outer(d_q, d_q))))
 
     return pd.DataFrame(
-        t.stack(tuple(edge(i) for i in range(num_samples))).numpy().astype(np.float64),
+        t.stack(
+            tuple(
+                edge(num_samples, mean_vect, std_vect, dot_prod, glob_net, orig[i])
+                for i in range(num_samples)
+            )
+        )
+        .numpy()
+        .astype(np.float64),
         columns=[
             a + "_" + b
             for a, b in zip(
