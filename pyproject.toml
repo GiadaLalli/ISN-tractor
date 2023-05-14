@@ -30,6 +30,7 @@ pytest-cov = "^4.0.0"
 
 [tool.poetry.group.benchmark.dependencies]
 pytest-benchmark = "^4.0.0"
+pyperf = "^2.6.0"
 
 [build-system]
 requires = ["poetry-core"]
