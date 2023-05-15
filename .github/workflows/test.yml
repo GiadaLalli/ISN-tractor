@@ -21,7 +21,7 @@ jobs:
       - uses: Gr1N/setup-poetry@v8
 
       - name: Install dependencies
-        run: poetry install
+        run: poetry install --without=benchmark
 
       - name: PyLint
         run: poetry run pylint isn_tractor/
@@ -42,3 +42,35 @@ jobs:
           name: Tests on Python ${{ matrix.python-version }}
           path: report.xml
           reporter: java-junit
+  benchmark:
+    name: "Performance regression tests"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+      - uses: Gr1N/setup-poetry@v8
+
+      - name: "Install dependencies"
+        run: poetry install
+
+      - name: "Run benchmark"
+        run: poetry run pytest test/test_benchmark.py --benchmark-json output.json
+
+      - name: Download previous benchmark data
+        uses: actions/cache@v1
+        with:
+          path: ./cache
+          key: ${{ runner.os }}-benchmark
+
+      - name: Store benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: "pytest"
+          output-file-path: "output.json"
+          external-data-json-path: "./cache/benchmark-data.json"
+          fail-on-alert: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          comment-on-alert: true
+          summary-always: true
