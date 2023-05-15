@@ -3,6 +3,7 @@ import numpy as np
 import isn_tractor.ibisn as it
 import time
 
+
 def dataframe(size, values):
     n_rows, n_cols = size
     mapped = "mapped" if "mapped" in values else "unmapped"
@@ -21,22 +22,33 @@ def dataframe(size, values):
 
     return df
 
+
 dfs = []
-sizes = [(200, 1000), (200, 2000), (200, 3000), (500, 1000), (500, 2000), (500, 3000), (1000, 1000), (1000, 2000), (2000, 1000)]
+sizes = [
+    (200, 1000),
+    (200, 2000),
+    (200, 3000),
+    (500, 1000),
+    (500, 2000),
+    (500, 3000),
+    (1000, 1000),
+    (1000, 2000),
+    (2000, 1000),
+]
 for i, size in enumerate(sizes):
     df_name = f"m_df{i+1}"
     df = dataframe(size, ["mapped", "continuous"])
     locals()[df_name] = df
     dfs.append(df)
-    
+
 times = []  # list to store processing times
 
 for df in dfs:
     start_time = time.time()
-    it.dense_isn(df.T, "pearson")
+    it.dense_isn(df)
     end_time = time.time()
     times.append(end_time - start_time)
-    
+
 times_df = pd.DataFrame({"processing_time": times})
 times_df.to_csv("processing_times.csv", index=False)
 
