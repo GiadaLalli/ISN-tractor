@@ -1,3 +1,5 @@
+import pytest
+
 from pandas import DataFrame
 from numpy.random import uniform
 
@@ -12,6 +14,7 @@ def continuous(n_individuals: int, m_genes: int) -> DataFrame:
     )
 
 
+@pytest.mark.benchmark
 def test_dense_isn(benchmark):
     data = continuous(200, 1000)
     benchmark.pedantic(dense_isn, args=(data,), rounds=20, iterations=3)
