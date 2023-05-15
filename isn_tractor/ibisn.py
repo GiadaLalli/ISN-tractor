@@ -395,38 +395,40 @@ def __dense_metric():
 
 def dense_isn(
     data: pd.DataFrame,
-    metric: Metric,
     device: Optional[t.device] = None,
 ):
     """
     Network computation based on the Lioness algorithm
     """
-    num_samples = data.shape[1]
-    samples = data.columns
+    num_samples = t.tensor(data.shape[0])
+    orig = t.tensor(data.to_numpy(), device=device)
+    orig_transpose = t.tensor(data.T.to_numpy(), device=device)
+    dot_prod = t.matmul(orig_transpose, orig)
+    mean_vect = t.sum(orig, dim=0)
+    std_vect = t.sum(t.pow(orig, 2), dim=0)
+    glob_net = num_samples * t.corrcoef(orig_transpose)
 
-    if isinstance(metric, str):
-        metric_fn = __dense_metric()
-    else:
-        metric_fn = metric  # type: ignore[assignment]
-    data_transpose = data.T
-    net = metric_fn(t.tensor(data.to_numpy()))
-    agg = net.numpy().flatten()
+    @t.jit.script
+    def edge(num, mean_v, std_v, dot, glob, row):
+        mean = mean_v - row
+        d_q = t.sqrt((num - 1) * (std_v - t.pow(row, 2)) - t.pow(mean, 2))
+        nom = (num - 1) * (dot - t.outer(row, row)) - t.outer(mean, mean)
+        return t.flatten(glob - ((num - 1) * (nom / t.outer(d_q, d_q))))
 
-    dense = pd.DataFrame(
-        np.nan,
-        index=np.arange(data.shape[0] * data.shape[0]),
-        columns=["reg", "tar"] + list(samples),
-    ).astype(object)
-    dense.iloc[:, 0] = np.repeat(data_transpose.columns.values, data.shape[0])
-    dense.iloc[:, 1] = np.tile(data_transpose.columns.values, data.shape[0])
-
-    for i in range(num_samples):
-        values = (
-            metric_fn(t.tensor(np.delete(data.T.to_numpy(), i, 0)).to(device))
-            .cpu()
-            .numpy()
-            .flatten()
+    return pd.DataFrame(
+        t.stack(
+            tuple(
+                edge(num_samples, mean_vect, std_vect, dot_prod, glob_net, orig[i])
+                for i in range(num_samples)
+            )
         )
-        dense.iloc[:, i + 2] = num_samples * (agg - values) + values
-
-    return dense
+        .numpy()
+        .astype(np.float64),
+        columns=[
+            a + "_" + b
+            for a, b in zip(
+                np.repeat(data.columns.values, data.shape[1]),
+                np.tile(data.columns.values, data.shape[1]),
+            )
+        ],
+    )
