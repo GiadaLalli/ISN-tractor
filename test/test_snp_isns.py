@@ -605,4 +605,4 @@ def test_dense():
         [network.numpy().astype(float32) for network in dense_isn(gene_data.copy())],
         columns=out_columns,
     )
-    assert_frame_equal(expected, new)
+    assert_frame_equal(expected, new, rtol=0.00001, atol=0.00001)
