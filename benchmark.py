@@ -25,8 +25,50 @@ def continuous(n_individuals: int, m_genes: int) -> DataFrame:
 if __name__ == "__main__":
     runner = pyperf.Runner()
 
-    bench = runner.timeit(
-        "dense",
-        stmt="dense_isn(df)",
-        setup="from benchmark import continuous; from isn_tractor.ibisn import dense_isn; df = continuous(200, 1000)",
+    runner.timeit(
+        "dense_500_1000",
+        stmt="for isn in dense_isn(df): del isn",
+        setup="from benchmark import continuous; from isn_tractor.ibisn import dense_isn; df = continuous(500, 1000)",
+    )
+
+    runner.timeit(
+        "dense_500_2000",
+        stmt="for isn in dense_isn(df): del isn",
+        setup="from benchmark import continuous; from isn_tractor.ibisn import dense_isn; df = continuous(500, 2000)",
+    )
+
+    runner.timeit(
+        "dense_500_3000",
+        stmt="for isn in dense_isn(df): del isn",
+        setup="from benchmark import continuous; from isn_tractor.ibisn import dense_isn; df = continuous(500, 3000)",
+    )
+
+    runner.timeit(
+        "dense_1000_3000",
+        stmt="for isn in dense_isn(df): del isn",
+        setup="from benchmark import continuous; from isn_tractor.ibisn import dense_isn; df = continuous(1000, 3000)",
+    )
+
+    runner.timeit(
+        "dense_2000_3000",
+        stmt="for isn in dense_isn(df): del isn",
+        setup="from benchmark import continuous; from isn_tractor.ibisn import dense_isn; df = continuous(2000, 3000)",
+    )
+
+    runner.timeit(
+        "dense_2000_5000",
+        stmt="for isn in dense_isn(df): del isn",
+        setup="from benchmark import continuous; from isn_tractor.ibisn import dense_isn; df = continuous(2000, 5000)",
+    )
+
+    runner.timeit(
+        "dense_2000_10000",
+        stmt="for isn in dense_isn(df): del isn",
+        setup="from benchmark import continuous; from isn_tractor.ibisn import dense_isn; df = continuous(2000, 10_000)",
+    )
+
+    runner.timeit(
+        "dense_5000_10000",
+        stmt="for isn in dense_isn(df): del isn",
+        setup="from benchmark import continuous; from isn_tractor.ibisn import dense_isn; df = continuous(5000, 10_000)",
     )

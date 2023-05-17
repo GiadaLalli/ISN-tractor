@@ -400,9 +400,9 @@ def dense_isn(
     """
     Network computation based on the Lioness algorithm
     """
-    num_samples = t.tensor(data.shape[0])
-    orig = t.tensor(data.to_numpy(), device=device)
-    orig_transpose = t.tensor(data.T.to_numpy(), device=device)
+    num_samples = t.tensor(data.shape[0], dtype=t.float32)
+    orig = t.from_numpy(data.to_numpy(dtype=np.float32, copy=False)).to(device)
+    orig_transpose = t.transpose(orig, 0, 1)
     dot_prod = t.matmul(orig_transpose, orig)
     mean_vect = t.sum(orig, dim=0)
     std_vect = t.sum(t.pow(orig, 2), dim=0)
@@ -412,23 +412,12 @@ def dense_isn(
     def edge(num, mean_v, std_v, dot, glob, row):
         mean = mean_v - row
         d_q = t.sqrt((num - 1) * (std_v - t.pow(row, 2)) - t.pow(mean, 2))
-        nom = (num - 1) * (dot - t.outer(row, row)) - t.outer(mean, mean)
-        return t.flatten(glob - ((num - 1) * (nom / t.outer(d_q, d_q))))
-
-    return pd.DataFrame(
-        t.stack(
-            tuple(
-                edge(num_samples, mean_vect, std_vect, dot_prod, glob_net, orig[i])
-                for i in range(num_samples)
-            )
+        nom = (num - 1) * (dot - (t.reshape(row, (row.shape[0], 1)) * row)) - (
+            t.reshape(mean, (row.shape[0], 1)) * mean
         )
-        .numpy()
-        .astype(np.float64),
-        columns=[
-            a + "_" + b
-            for a, b in zip(
-                np.repeat(data.columns.values, data.shape[1]),
-                np.tile(data.columns.values, data.shape[1]),
-            )
-        ],
-    )
+        return t.flatten(
+            glob - ((num - 1) * (nom / (t.reshape(d_q, (d_q.shape[0], 1)) * d_q)))
+        )
+
+    for i in range(data.shape[0]):
+        yield edge(num_samples, mean_vect, std_vect, dot_prod, glob_net, orig[i])

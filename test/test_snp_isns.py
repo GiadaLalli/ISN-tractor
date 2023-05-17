@@ -1,7 +1,7 @@
 import pytest
 from isn_tractor.ibisn import sparse_isn, dense_isn, __spearman_metric
 
-from numpy import array, zeros, concatenate, corrcoef, int64, float64
+from numpy import array, zeros, concatenate, corrcoef, int64, float32
 import pandas as pd
 from pandas.testing import assert_frame_equal
 from sklearn.metrics import normalized_mutual_info_score as mutual_info
@@ -547,37 +547,62 @@ def test_dense():
         columns=["gene1", "gene2", "gene3"],
     )
 
+    out_columns = [
+        "gene1_gene1",
+        "gene1_gene2",
+        "gene1_gene3",
+        "gene2_gene1",
+        "gene2_gene2",
+        "gene2_gene3",
+        "gene3_gene1",
+        "gene3_gene2",
+        "gene3_gene3",
+    ]
+
     expected = pd.DataFrame(
         [
             (
                 1.0,
-                -3.902325,
+                -3.9023278,
                 -2.543286,
-                -3.902325,
+                -3.9023278,
                 1.0,
                 0.625879,
                 -2.543286,
                 0.625879,
                 1.0,
             ),
-            (1.0, 0.097675, 1.456714, 0.097675, 1.0, 0.625879, 1.456714, 0.625879, 1.0),
-            (1.0, 0.097675, 1.456714, 0.097675, 1.0, 0.625879, 1.456714, 0.625879, 1.0),
+            (
+                1.0,
+                0.0976758,
+                1.456714,
+                0.0976758,
+                1.0,
+                0.625879,
+                1.456714,
+                0.625879,
+                1.0,
+            ),
+            (
+                1.0,
+                0.09767747,
+                1.456714,
+                0.09767747,
+                1.0,
+                0.625879,
+                1.456714,
+                0.625879,
+                1.0,
+            ),
         ],
-        columns=[
-            "gene1_gene1",
-            "gene1_gene2",
-            "gene1_gene3",
-            "gene2_gene1",
-            "gene2_gene2",
-            "gene2_gene3",
-            "gene3_gene1",
-            "gene3_gene2",
-            "gene3_gene3",
-        ],
+        columns=out_columns,
     )
 
     for x in expected.columns:
-        expected[x] = expected[x].astype(float64)
+        expected[x] = expected[x].astype(float32)
 
-    new = dense_isn(gene_data.copy())
-    assert_frame_equal(expected, new)
+    new = pd.DataFrame(
+        [network.numpy().astype(float32) for network in dense_isn(gene_data.copy())],
+        columns=out_columns,
+    )
+    assert_frame_equal(expected, new, rtol=0.00001, atol=0.00001)

@@ -40,7 +40,7 @@ build-backend = "poetry.core.masonry.api"
 ignore_missing_imports = true
 
 [tool.pylint]
-generated-members = "t.tensor,t.matmul,t.arange,t.corrcoef,t.cat,t.argsort,t.zeros,t.device,t.square,t.from_numpy,t.mean,t.stack,t.max,t.sum,t.pow,t.sqrt,t.outer,t.flatten"
+generated-members = "t.tensor,t.matmul,t.arange,t.corrcoef,t.cat,t.argsort,t.zeros,t.device,t.square,t.from_numpy,t.mean,t.stack,t.max,t.sum,t.pow,t.sqrt,t.outer,t.flatten,t.float32,t.transpose,t.reshape"
 
 [tool.pytest.ini_options]
 markers = [
