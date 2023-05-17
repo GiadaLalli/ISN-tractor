@@ -14,7 +14,12 @@ def continuous(n_individuals: int, m_genes: int) -> DataFrame:
     )
 
 
+def compute_dense_isn(data):
+    for isn in dense_isn(data):
+        del isn
+
+
 @pytest.mark.benchmark
 def test_dense_isn(benchmark):
     data = continuous(200, 1000)
-    benchmark.pedantic(dense_isn, args=(data,), rounds=20, iterations=3)
+    benchmark.pedantic(compute_dense_isn, args=(data,), rounds=20, iterations=3)
