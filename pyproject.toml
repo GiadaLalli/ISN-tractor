@@ -17,7 +17,7 @@ pandas = "^1.5.2"
 numpy = "^1.24.1"
 scipy = "^1.10.0"
 scikit-learn = "^1.2.0"
-torch = "^1.13.1"
+torch = {version = "^2.0.1+cu118", source = "torch"}
 
 
 [tool.poetry.group.dev.dependencies]
@@ -31,6 +31,16 @@ pytest-cov = "^4.0.0"
 [tool.poetry.group.benchmark.dependencies]
 pytest-benchmark = "^4.0.0"
 pyperf = "^2.6.0"
+
+
+[[tool.poetry.source]]
+name = "torch"
+url = "https://download.pytorch.org/whl/cu118"
+priority = "supplemental"
+
+[[tool.poetry.source]]
+name = "PyPI"
+priority = "default"
 
 [build-system]
 requires = ["poetry-core"]
