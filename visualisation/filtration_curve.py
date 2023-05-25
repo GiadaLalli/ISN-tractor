@@ -77,4 +77,14 @@ def analyze_network_data(data, type_analysis="Strength", abs_val=True, thr_value
     color_mapping = {'Cases': 'red', 'Controls': 'blue'}
     plt.errorbar(df_controls["Thr"], df_controls["Mean"], yerr=df_controls["sd"], elinewidth=0.5)
     plt.errorbar(df_cases["Thr"], df_cases["Mean"], yerr=df_cases["sd"], elinewidth=0.5, color="red")
+
+    # Add labels to the x-axis and y-axis
+    plt.xlabel("Threshold Values")
+    plt.ylabel("Graph Statistic: Strength")
+
+    # Create legend based on color_mapping
+    labels = list(color_mapping.keys())
+    handles = [plt.Line2D([], [], color=color_mapping[label], marker='o', linestyle='-') for label in labels]
+    plt.legend(handles, labels)
+
     plt.show()
