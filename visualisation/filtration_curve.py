@@ -1,3 +1,66 @@
+def analyze_network_data(data, type_analysis="Strength", abs_val=True, thr_values=None, label_column='label'):
+    data_list = {}
+
+    def preprocess_data(data, label_column):
+        data.index.name = None
+
+        if label_column is not None:
+            unique_labels = data[label_column].unique()
+            for label in unique_labels:
+                data_label = data[data[label_column] == label]
+                data_label.drop([label_column], axis=1, inplace=True)
+                data_label = data_label.T.reset_index()
+                data_label[['N1', 'N2']] = data_label['index'].str.split("_", expand=True)
+                data_label.drop(['index'], axis=1, inplace=True)
+                data_list[label] = data_label
+
+        else:
+            data_list["data"] = data.T.reset_index()
+            data_list["data"][['N1', 'N2']] = data_list["data"]['index'].str.split("_", expand=True)
+            data_list["data"].drop(['index'], axis=1, inplace=True)
+
+    preprocess_data(data, label_column)
+
+    num_labels = len(data_list)
+    if thr_values is None:
+        thr_values = np.arange(0.02, 4, 0.03)
+
+    FC = np.zeros((num_labels, len(thr_values)))
+
+    def calculate_FC(data_list, FC):
+        for indv, label in enumerate(data_list):
+            data_label = data_list[label]
+            Adj = nx.from_pandas_edgelist(data_label, "N1", "N2", "Weight")
+            for i in range(len(thr_values)):
+                Adj_bin = np.where((Adj < thr_values[i]) & (Adj > 0), 1, 0)
+                g = nx.from_numpy_array(Adj_bin, create_using=nx.Graph)
+                FC[indv, i] = g.size()
+
+    calculate_FC(data_list, FC)
+
+    df = pd.DataFrame({"Thr": thr_values})
+    for indv, label in enumerate(data_list):
+        df_label = pd.DataFrame({"Mean": np.mean(FC[indv], axis=0), "sd": np.std(FC[indv], axis=0), "cl": [label] * len(thr_values)})
+        df = pd.concat([df, df_label], axis=1)
+
+    plt.figure(figsize=(12, 10))
+    color_mapping = {label: plt.get_cmap('tab10')(idx) for idx, label in enumerate(data_list)}
+    for label in data_list:
+        plt.errorbar(df["Thr"], df[label]["Mean"], yerr=df[label]["sd"], elinewidth=0.5, color=color_mapping[label])
+
+    # Add labels to the x-axis and y-axis
+    plt.xlabel("Threshold Values")
+    plt.ylabel("Graph Statistic: Strength")
+
+    # Create legend based on color_mapping
+    handles = [plt.Line2D([], [], color=color_mapping[label], marker='o', linestyle='-') for label in data_list]
+    plt.legend(handles, data_list.keys())
+
+    plt.show()
+
+
+'''
+PREVIOUS VERSION
 import pandas as pd
 import numpy as np
 import networkx as nx
@@ -88,3 +151,4 @@ def analyze_network_data(data, type_analysis="Strength", abs_val=True, thr_value
     plt.legend(handles, labels)
 
     plt.show()
+'''
