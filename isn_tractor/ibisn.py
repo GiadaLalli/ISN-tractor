@@ -349,7 +349,7 @@ def sparse_isn(
     else:
         interact = interact_mapped.values
     assert np.all(snp.isin(data.columns) for snp in interact)  # type: ignore[call-overload]
-    if metric == "incremental_pearson":
+    if metric == "incremental_pearson" and interact_unmapped is None:
         return dense_isn(data, device)
 
     if isinstance(metric, str):
