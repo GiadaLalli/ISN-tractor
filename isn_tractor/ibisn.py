@@ -21,6 +21,7 @@ PoolingFn = Callable[
 
 Metric = Union[
     Literal["pearson"],
+    Literal["incremental_pearson"],
     Literal["spearman"],
     Literal["dot"],
     MetricFn,
@@ -343,6 +344,14 @@ def sparse_isn(
     Specify the pyTorch device on which computation should take place. For example, pass:
     `device=t.device("cuda")` to run on the 'current' CUDA device.
     """
+    if interact_unmapped is not None:
+        interact = interact_unmapped
+    else:
+        interact = interact_mapped.values
+    assert np.all(snp.isin(data.columns) for snp in interact)  # type: ignore[call-overload]
+    if metric == "incremental_pearson" and interact_unmapped is None:
+        return dense_isn(data, device)
+
     if isinstance(metric, str):
         if (
             metric_fn := {
@@ -369,12 +378,6 @@ def sparse_isn(
     else:
         pooling_fn = pool
 
-    if interact_unmapped is not None:
-        interact = interact_unmapped
-    else:
-        interact = interact_mapped.values
-
-    assert np.all(snp.isin(data.columns) for snp in interact)  # type: ignore[call-overload]
     assert metric_fn is not None
     assert pooling_fn is not None
 
@@ -384,13 +387,6 @@ def sparse_isn(
         np.column_stack([isn_edge(*assoc) for assoc in interact]),
         columns=[a + "_" + b for a, b in interact_mapped.values],
     )
-
-
-def __dense_metric():
-    def metric(data: t.Tensor):
-        return t.corrcoef(data)
-
-    return metric
 
 
 def dense_isn(
