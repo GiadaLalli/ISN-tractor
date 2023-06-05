@@ -176,7 +176,7 @@ def test_dense_2000_10000(benchmark):
 
 
 def compute_sparse_isn(
-    data, interact_unmapped, interact_mapped, metric="pearson", pool="max"
+    data, interact_unmapped, interact_mapped, metric="incremental_pearson", pool=None
 ):
     for isn in sparse_isn(
         data,
@@ -187,18 +187,55 @@ def compute_sparse_isn(
     ):
         del isn
 
-
+'''
 @pytest.mark.benchmark
-def test_sparse_200_1000(benchmark):
-    data = continuous(200, 1000)
-    i_m = interactions(100)
+def test_sparse_200_10000(benchmark):
+    data = continuous(200, 10000)
+    i_m = interactions(5000)
     # device = t.device("cuda")
     benchmark.pedantic(
         compute_sparse_isn,
-        args=(data, None, i_m, "pearson", "max"),
+        args=(data, None, i_m, "incremental_pearson", None),
         rounds=20,
         iterations=3,
     )
+
+@pytest.mark.benchmark
+def test_sparse_500_10000(benchmark):
+    data = continuous(500, 10000)
+    i_m = interactions(5200)
+    # device = t.device("cuda")
+    benchmark.pedantic(
+        compute_sparse_isn,
+        args=(data, None, i_m, "incremental_pearson", None),
+        rounds=20,
+        iterations=3,
+    )
+
+@pytest.mark.benchmark
+def test_sparse_1000_10000(benchmark):
+    data = continuous(1000, 10000)
+    i_m = interactions(7000)
+    # device = t.device("cuda")
+    benchmark.pedantic(
+        compute_sparse_isn,
+        args=(data, None, i_m, "incremental_pearson", None),
+        rounds=20,
+        iterations=3,
+    )
+'''
+@pytest.mark.benchmark
+def test_sparse_2000_10000(benchmark):
+    data = continuous(2000, 10000)
+    i_m = interactions(8000)
+    # device = t.device("cuda")
+    benchmark.pedantic(
+        compute_sparse_isn,
+        args=(data, None, i_m, "incremental_pearson", None),
+        rounds=20,
+        iterations=3,
+    )
+
 
 
 """
