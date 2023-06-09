@@ -1,79 +1,79 @@
+
+
 import pandas as pd
 import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
 
-def analyze_network_data(data, type_analysis="Strength", abs_val=True, thr_values=None, label_column='label', labels=None):
-    def preprocess_data(data, label_column, labels):
+def analyze_network_data(data, type_analysis="Strength", abs_val=True, thr_values=None, label_column='label'):
+    data_list = {}
+
+    def preprocess_data(data, label_column):
         data.index.name = None
 
-    if label_column is not None:
-        data_list = []
+        if label_column is not None:
+            unique_labels = data[label_column].unique()
+            for label in unique_labels:
+                data_label = data[data[label_column] == label]
+                data_label.drop([label_column], axis=1, inplace=True)
 
-        for label in labels:
-            data_label = data[data[label_column] == label]
-            data_label.drop([label_column], axis=1, inplace=True)
-            data_label = data_label.T.reset_index()
-            data_label[['N1', 'N2']] = data_label['index'].str.split("_", expand=True)
-            data_label.drop(['index'], axis=1, inplace=True)
-            data_list.append(data_label)
+                # Transpose the dataframes and reset the index
+                label_data = data_label.T.reset_index()
+                label_data[['N1', 'N2']] = label_data['index'].str.split("_", expand=True)
+                label_data.drop(['index'], axis=1, inplace=True)
 
-        return data_list
+                data_list[label] = label_data
+        else:
+            data_list['default'] = data
 
-    else:
-        return [data]
-    def process_data(data_list, data_dict, thr):
-        for indv, data in enumerate(data_list):
-            temp_list = []
-            for i in range(data.shape[1] - 2):
-                temp = data.iloc[:, [data.shape[1] - 2, data.shape[1] - 1, i]].copy()
-                if abs_val:
-                    temp.iloc[:, 2] = np.abs(temp.iloc[:, 2])
-                aa = temp.columns[2]
-                temp.columns = ["E1", "E2", "Weight"]
-                mygraph = nx.from_pandas_edgelist(temp, "E1", "E2", "Weight")
-                gg = nx.to_numpy_array(mygraph, weight="Weight")
-                temp_list.append(gg)
-            data_dict[aa] = temp_list
-    def calculate_FC(data_dict, FC):
-        for indv, data_list in enumerate(data_dict.values()):
-            for i in range(len(thr_values)):
-                for Adj in data_list:
-                    Adj_bin = np.where((Adj < thr_values[i]) & (Adj > 0), 1, 0)
-                    g = nx.from_numpy_array(Adj_bin, create_using=nx.Graph)
-                    FC[indv, i] += g.size()
-        data_list = preprocess_data(data, label_column, labels)
+    preprocess_data(data, label_column)
 
     num_labels = len(data_list)
-    num_controls = len(data_list[0])
-    thr_values = np.arange(0.02, 4, 0.03)
-    FC = np.zeros((num_controls, len(thr_values)))
+    if thr_values is None:
+        thr_values = np.arange(0.02, 4, 0.03)
+    FC = np.zeros((num_labels, len(thr_values)))
 
-    process_data(data_list, controls_list, thr_values)
-    calculate_FC(controls_list, FC)
+    def process_data(data, data_list, thr):
+        for indv, (label, label_data) in enumerate(data_list.items()):
+            temp = label_data.iloc[:, [label_data.shape[1] - 2, label_data.shape[1] - 1, -1]].copy()
+            if abs_val:
+                temp.iloc[:, 2] = np.abs(temp.iloc[:, 2])
+            temp.columns = ["E1", "E2", "Weight"]
+            mygraph = nx.from_pandas_edgelist(temp, "E1", "E2", "Weight")
+            Adj = nx.to_numpy_array(mygraph, weight="Weight")
 
-    df = pd.DataFrame({"Thr": thr_values})
-    for indv, label in enumerate(labels):
-        mean_values = np.mean(FC[indv], axis=0)
-        std_values = np.std(FC[indv], axis=0)
-        cl_values = [label] * len(thr_values)
-        df[label] = mean_values
-        df[f"{label}_std"] = std_values
-        df[f"{label}_cl"] = cl_values
+            for i in range(len(thr_values)):
+                Adj_bin = np.where((Adj < thr_values[i]) & (Adj > 0), 1, 0)
+                g = nx.from_numpy_array(Adj_bin, create_using=nx.Graph)
+                FC[indv, i] = g.size()
+
+    process_data(data, data_list, thr_values)
+
+    df_list = []
+    for label, fc_values in zip(data_list.keys(), FC):
+        mean = np.mean(fc_values, axis=0)
+        std = np.std(fc_values, axis=0)
+        df_label = pd.DataFrame({"Thr": thr_values, "Mean": mean, "sd": std, "cl": [label] * len(thr_values)})
+        df_list.append(df_label)
+
+    df = pd.concat(df_list)
 
     plt.figure(figsize=(12, 10))
-    color_mapping = {label: plt.cm.tab10(ind) for ind, label in enumerate(labels)}
+    unique_labels = df["cl"].unique()
+    color_mapping = {label: plt.cm.get_cmap('tab10')(i) for i, label in enumerate(unique_labels)}
 
-    for label in labels:
-        mean_label = df[label]
-        std_label = df[f"{label}_std"]
-        cl_label = df[f"{label}_cl"]
+    for label in unique_labels:
+        df_label = df[df["cl"] == label]
+        plt.errorbar(df_label["Thr"], df_label["Mean"], yerr=df_label["sd"], elinewidth=0.5, color=color_mapping[label])
 
-        plt.errorbar(df["Thr"], mean_label, yerr=std_label, elinewidth=0.5, color=color_mapping[label], label=label)
-
+    # Add labels to the x-axis and y-axis
     plt.xlabel("Threshold Values")
     plt.ylabel("Graph Statistic: Strength")
-    plt.legend()
+
+    # Create legend based on color_mapping
+    handles = [plt.Line2D([], [], color=color_mapping[label], marker='o', linestyle='-') for label in unique_labels]
+    plt.legend(handles, unique_labels)
+
     plt.show()
 
 '''
