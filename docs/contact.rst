@@ -6,7 +6,7 @@ If you find this library useful, please cite: (AHAHAHAH)
 About us
 ========
 
-This library has been developed WHEN, WHERE, FUNDED BY WHOM
+This library has been developed til June 2023 at KU Leuven, Belgium and funded by the European Union's Horizon 2020 research and innovation programme under the H2020 Marie Skłodowska-Curie grant agreement (No. 860895 to GL, ZL, FM and KVS). 
 
 Disclaimer
 ==========
