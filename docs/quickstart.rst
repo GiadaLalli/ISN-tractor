@@ -5,10 +5,10 @@ The ``examples`` folder contains some scripts showing how the ``ISN-Tractor`` li
 
 Example 1: dense gene-based ISNs computation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-This example shows how to compute the ISNs of a gene-based dataset.
+This example shows how to compute dense ISNs of a gene-based dataset.
 
 Data generation:
-The gene expression data is generated using the log-normal distribution by utilizing the ``np.random.lognormal`` function. 
+The synthetic gene expression data is generated using the log-normal distribution by utilizing the ``np.random.lognormal`` function. 
 By adjusting the parameters ``mean`` and ``sigma``, the distribution of the data can be controlled to make it more realistic according to specific requirements. 
 To create a DataFrame, the ``dataframe()`` function is employed, which takes two arguments: ``n_rows`` and ``n_cols``. 
 The ``n_rows`` parameter determines the desired number of rows (representing the sample size), while the ``n_cols`` parameter determines the desired number of columns (representing the feature size). 

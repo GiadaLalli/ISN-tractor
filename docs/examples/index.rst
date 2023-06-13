@@ -17,7 +17,6 @@ The synthetic gene expression data is generated using the log-normal distributio
 For further details, refer to Example 1 (dense gene-based ISNs computation).
 
 .. code-block:: python
-``
 import numpy as np
 import pandas as pd
 
@@ -33,7 +32,7 @@ def dataframe(n_rows, n_cols):
     return df
 
 df=dataframe(500, 2000)
-``
+
 
 Interaction list generation:
 The ``interactions()`` function generates a DataFrame representing feature interactions. The function takes the number of rows (``n_rows``) as input and creates a list of feature names. 
@@ -42,7 +41,6 @@ After removing 30% of the randomly selected rows to simulate interaction removal
 The function then outputs the ``interact_df`` DataFrame.
 
 .. code-block:: python
-``
 def interactions(n_rows):
     features = [f"gene_{i+1}" for i in range(n_rows)]
     interact = []
@@ -63,22 +61,19 @@ def interactions(n_rows):
     return interact_df
 
 interact=interactions(2000)
-``
+
 
 The ``ISN_Tractor`` library is imported as follows:
 
 .. code-block:: python
-``
 import isn_tractor.ibisn as it
-``
+
 
 ISN generation:
 the ``sparse_isn`` function is invoked to transform the gene-based dataset into a sparse isn dataset using as metric parameter ``incremental_pearson``.
 
 .. code-block:: python
-``
 sparse_isn=it.sparse_isn(df, interact_unmapped=None, interact_mapped=interact, metric="incremental_pearson")
-``
 
 .. toctree::
    :maxdepth: 2
@@ -99,7 +94,6 @@ Once the SNP data is generated, it is accompanied by cluster information and org
 This streamlined process facilitates the study of genetic variations and supports the development of computational methods in genomics research.
 
 .. code-block:: python
-``
 def onehot(x):
     X = np.zeros((x.size, x.max() + 1))
     X[np.arange(x.size), x] = 1
@@ -161,23 +155,19 @@ df = pd.DataFrame(np.hstack((R, clust1[:, None])), columns=header)
 #header = ['SNP'+str(i+1) for i in range(R.shape[1])] + ['Pheno']
 #np.savetxt(path + 'toydata_SNP.csv', np.hstack((R, clust1[:,None])),
 #        delimiter=',', header=','.join(header), comments='', fmt="%i")
-``
 
 Interaction list generation:
 
 .. code-block:: python
-``
 genes = ['gene'+str(i+1) for i in range(20)]
 interact = np.array(np.meshgrid(genes, genes)).T.reshape(-1, 2)
 interact_df = pd.DataFrame(interact, columns=['feature_1', 'feature_2'])
 #save the synthetic interactions
 #np.savetxt(path + 'toydata_interact_genes.csv', interact, delimiter=',', fmt="%s")
-``
 
 Mapping simulation:
 
 .. code-block:: python
-``
 mapping = []
 for pair in interact:
     gene1 = int(pair[0][4:]) - 1
@@ -192,19 +182,16 @@ mapping_df = pd.DataFrame(mapping, columns=['snps1', 'snps2'])
 #save the mapping
 #import pickle
 #pickle.dump(mapping, open(path + 'toydata_interact_snps.pkl', "wb"))
-``
+
 
 The ``ISN_Tractor`` library is imported as follows:
 
 .. code-block:: python
-``
 import isn_tractor.ibisn as it
-``
+
 
 ISN generation:
 the ``sparse_isn`` function is invoked to transform the SNP-array-like dataset into a sparse isn dataset using as metric parameter ``pearson`` and pooling parameter ``max``.
 
 .. code-block:: python
-``
 sparse_isn=it.sparse_isn(df, interact_unmapped=mapping_df, interact_mapped=interact_df, metric="pearson", pool="max")
-``
