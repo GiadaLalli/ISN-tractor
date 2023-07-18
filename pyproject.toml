@@ -18,6 +18,7 @@ numpy = "^1.24.1"
 scipy = "^1.10.0"
 scikit-learn = "^1.2.0"
 torch = {version = "^2.0.1+cu118", source = "torch"}
+sympy = "^1.12"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -32,6 +33,10 @@ pytest-cov = "^4.0.0"
 pytest-benchmark = "^4.0.0"
 pyperf = "^2.6.0"
 
+
+
+[tool.poetry.group.visualization.dependencies]
+networkx = "^3.1"
 
 [[tool.poetry.source]]
 name = "torch"
