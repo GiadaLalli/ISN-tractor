@@ -109,28 +109,30 @@ if __name__ == "__main__":
     output = sys.argv[4] if sys.argv[4] != "-" else None
     # expr = read_r(expr_filename)[None]
     # expr = np.load(expr_filename)
-    expr = pd.read_csv(expr_filename, sep=" ", index_col=0)
+    expr = pd.read_csv(expr_filename, sep=" ", index_col=0).T
     # expr = pd.DataFrame(expr, columns=['gene' + str(i+1) for i in range(expr.shape[1])])
-    clinic = pd.read_csv(clinic_filename, sep=" ")
+    clinic = pd.read_csv(clinic_filename, sep=" ", index_col=0)
+    clinic = clinic.replace({'yes': 1, 'no': 0})
     print(expr.shape)
     print(clinic.shape)
-    print(expr.head())
-    print(clinic.head())
-    # sys.exit()
+    
     # Select the most variable features
-    variance = np.argsort(np.var(expr, axis=0))[::-1]
-    expr = expr.iloc[:subset, variance[:subset]]
+    # variance = np.argsort(np.var(expr, axis=0))[::-1]
+    # expr = expr.iloc[:subset, variance[:subset]]
     clinic = clinic.iloc[:subset]
 
     # ISN computation
-    print(expr.shape)
-    ISNs = pd.DataFrame(it.dense_isn(expr)).astype(float)
-    a = np.repeat(expr.columns, expr.shape[1])
-    b = np.tile(expr.columns, expr.shape[1])
-    ISNs.columns = [a[i] + "_" + b[i] for i in range(expr.shape[1] ** 2)]
+    # ISNs = pd.DataFrame(it.dense_isn(expr)).astype(float)
+    # a = np.repeat(expr.columns, expr.shape[1])
+    # b = np.tile(expr.columns, expr.shape[1])
+    # ISNs.columns = [a[i] + "_" + b[i] for i in range(expr.shape[1] ** 2)]
+    ISNs = expr.iloc[:subset, :subset]
+    print(ISNs.shape)
+    print(clinic.shape)
 
     # Filtration curve
     df = pd.concat([ISNs, clinic["mets"]], axis=1)
+    print(df.shape)
     analyze_network_data(
         df.iloc[:20], label_column="mets", abs_val=False, output=output
     )
