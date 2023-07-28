@@ -112,10 +112,10 @@ if __name__ == "__main__":
     expr = pd.read_csv(expr_filename, sep=" ", index_col=0).T
     # expr = pd.DataFrame(expr, columns=['gene' + str(i+1) for i in range(expr.shape[1])])
     clinic = pd.read_csv(clinic_filename, sep=" ", index_col=0)
-    clinic = clinic.replace({'yes': 1, 'no': 0})
+    clinic = clinic.replace({"yes": 1, "no": 0})
     print(expr.shape)
     print(clinic.shape)
-    
+
     # Select the most variable features
     # variance = np.argsort(np.var(expr, axis=0))[::-1]
     # expr = expr.iloc[:subset, variance[:subset]]
