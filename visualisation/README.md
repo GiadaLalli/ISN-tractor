@@ -1,5 +1,5 @@
 Run with:
 
 ```shell
-poetry run python ./visualisation/filtration_curve.py ./visualisation/top50.tsv ./visualisation/targets.tsv 50 ./visualisation/fc_fede.png
+poetry run python ./visualisation/filtration_curve.py ./visualisation/expression.csv ./visualisation/answer.csv ./visualisation/plot.png
 ```
