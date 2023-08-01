@@ -49,9 +49,6 @@ def mapped_info(df):
     n_rows = len(df.columns)
 
     # Generate random values for each column
-    chrs = np.repeat(np.arange(1, n_chromosomes + 1), n_rows // n_chromosomes + 1)[
-        :n_rows
-    ]
     starts = np.arange(1, n_rows * 10000 + 1, 10000)
     stops = starts + 9
 
@@ -83,100 +80,122 @@ def continuous(n_individuals: int, m_genes: int) -> DataFrame:
     )
 
 
-"""
-def compute_dense_isn(data, device):
-    for isn in dense_isn(data, device=t.device("cuda")):
+def compute_dense_isn(data, device=None):
+    for isn in dense_isn(data, device=device):
         del isn
 
 
 @pytest.mark.benchmark
-def test_dense_200_1000(benchmark):
+def test_dense_200_500_cpu(benchmark):
+    data = continuous(200, 500)
+    benchmark(compute_dense_isn, data)
+
+
+@pytest.mark.benchmark
+def test_dense_200_1000_cuda(benchmark):
     data = continuous(200, 1000)
     device = t.device("cuda")
-    benchmark.pedantic(compute_dense_isn, args=(data,device), rounds=20, iterations=3)
+    benchmark.pedantic(compute_dense_isn, args=(data, device), rounds=20, iterations=3)
+
 
 @pytest.mark.benchmark
-def test_dense_200_2000(benchmark):
+def test_dense_200_2000_cuda(benchmark):
     data = continuous(200, 2000)
     device = t.device("cuda")
-    benchmark.pedantic(compute_dense_isn, args=(data,device), rounds=20, iterations=3)
+    benchmark.pedantic(compute_dense_isn, args=(data, device), rounds=20, iterations=3)
+
 
 @pytest.mark.benchmark
-def test_dense_200_3000(benchmark):
+def test_dense_200_3000_cuda(benchmark):
     data = continuous(200, 3000)
     device = t.device("cuda")
-    benchmark.pedantic(compute_dense_isn, args=(data,device), rounds=20, iterations=3)
+    benchmark.pedantic(compute_dense_isn, args=(data, device), rounds=20, iterations=3)
+
 
 @pytest.mark.benchmark
-def test_dense_500_1000(benchmark):
+def test_dense_500_1000_cuda(benchmark):
     data = continuous(500, 1000)
     device = t.device("cuda")
-    benchmark.pedantic(compute_dense_isn, args=(data,device), rounds=20, iterations=3)
+    benchmark.pedantic(compute_dense_isn, args=(data, device), rounds=20, iterations=3)
+
 
 @pytest.mark.benchmark
-def test_dense_500_2000(benchmark):
+def test_dense_500_2000_cuda(benchmark):
     data = continuous(500, 2000)
     device = t.device("cuda")
-    benchmark.pedantic(compute_dense_isn, args=(data,device), rounds=20, iterations=3)
+    benchmark.pedantic(compute_dense_isn, args=(data, device), rounds=20, iterations=3)
+
 
 @pytest.mark.benchmark
-def test_dense_500_3000(benchmark):
+def test_dense_500_3000_cuda(benchmark):
     data = continuous(500, 3000)
     device = t.device("cuda")
-    benchmark.pedantic(compute_dense_isn, args=(data,device), rounds=20, iterations=3)
+    benchmark.pedantic(compute_dense_isn, args=(data, device), rounds=20, iterations=3)
+
 
 @pytest.mark.benchmark
-def test_dense_1000_1000(benchmark):
+def test_dense_1000_1000_cuda(benchmark):
     data = continuous(1000, 1000)
     device = t.device("cuda")
-    benchmark.pedantic(compute_dense_isn, args=(data,device), rounds=20, iterations=3)
+    benchmark.pedantic(compute_dense_isn, args=(data, device), rounds=20, iterations=3)
+
 
 @pytest.mark.benchmark
-def test_dense_1000_2000(benchmark):
+def test_dense_1000_2000_cuda(benchmark):
     data = continuous(1000, 2000)
     device = t.device("cuda")
-    benchmark.pedantic(compute_dense_isn, args=(data,device), rounds=20, iterations=3)
+    benchmark.pedantic(compute_dense_isn, args=(data, device), rounds=20, iterations=3)
+
 
 @pytest.mark.benchmark
-def test_dense_1000_3000(benchmark):
+def test_dense_1000_3000_cuda(benchmark):
     data = continuous(1000, 3000)
     device = t.device("cuda")
-    benchmark.pedantic(compute_dense_isn, args=(data,device), rounds=20, iterations=3)
+    benchmark.pedantic(compute_dense_isn, args=(data, device), rounds=20, iterations=3)
+
 
 @pytest.mark.benchmark
-def test_dense_2000_1000(benchmark):
+def test_dense_2000_1000_cuda(benchmark):
     data = continuous(2000, 1000)
     device = t.device("cuda")
-    benchmark.pedantic(compute_dense_isn, args=(data,device), rounds=20, iterations=3)
+    benchmark.pedantic(compute_dense_isn, args=(data, device), rounds=20, iterations=3)
+
 
 @pytest.mark.benchmark
-def test_dense_2000_2000(benchmark):
+def test_dense_2000_2000_cuda(benchmark):
     data = continuous(2000, 2000)
     device = t.device("cuda")
-    benchmark.pedantic(compute_dense_isn, args=(data,device), rounds=20, iterations=3)
+    benchmark.pedantic(compute_dense_isn, args=(data, device), rounds=20, iterations=3)
+
 
 @pytest.mark.benchmark
-def test_dense_2000_3000(benchmark):
+def test_dense_2000_3000_cuda(benchmark):
     data = continuous(2000, 3000)
     device = t.device("cuda")
-    benchmark.pedantic(compute_dense_isn, args=(data,device), rounds=20, iterations=3)
+    benchmark.pedantic(compute_dense_isn, args=(data, device), rounds=20, iterations=3)
+
 
 @pytest.mark.benchmark
-def test_dense_2000_5000(benchmark):
+def test_dense_2000_5000_cuda(benchmark):
     data = continuous(2000, 5000)
     device = t.device("cuda")
-    benchmark.pedantic(compute_dense_isn, args=(data,device), rounds=20, iterations=3)
+    benchmark.pedantic(compute_dense_isn, args=(data, device), rounds=20, iterations=3)
+
 
 @pytest.mark.benchmark
-def test_dense_2000_10000(benchmark):
+def test_dense_2000_10000_cuda(benchmark):
     data = continuous(2000, 10000)
     device = t.device("cuda")
-    benchmark.pedantic(compute_dense_isn, args=(data,device), rounds=20, iterations=3)
-"""
+    benchmark.pedantic(compute_dense_isn, args=(data, device), rounds=20, iterations=3)
 
 
 def compute_sparse_isn(
-    data, interact_unmapped, interact_mapped, metric="incremental_pearson", pool=None
+    data,
+    interact_unmapped,
+    interact_mapped,
+    metric="incremental_pearson",
+    pool=None,
+    device=None,
 ):
     for isn in sparse_isn(
         data,
@@ -184,88 +203,100 @@ def compute_sparse_isn(
         interact_mapped=interact_mapped,
         metric=metric,
         pool=pool,
+        device=device,
     ):
         del isn
 
-'''
+
 @pytest.mark.benchmark
-def test_sparse_200_10000(benchmark):
+def test_sparse_200_500_cpu(benchmark):
+    data = continuous(200, 500)
+    interact = interactions(500)
+    benchmark(compute_sparse_isn, data, None, interact)
+
+
+@pytest.mark.benchmark
+def test_sparse_200_10000_cuda(benchmark):
     data = continuous(200, 10000)
     i_m = interactions(5000)
-    # device = t.device("cuda")
+    device = t.device("cuda")
     benchmark.pedantic(
         compute_sparse_isn,
-        args=(data, None, i_m, "incremental_pearson", None),
+        args=(data, None, i_m, "incremental_pearson", None, device),
         rounds=20,
         iterations=3,
     )
 
+
 @pytest.mark.benchmark
-def test_sparse_500_10000(benchmark):
+def test_sparse_500_10000_cuda(benchmark):
     data = continuous(500, 10000)
     i_m = interactions(5200)
-    # device = t.device("cuda")
+    device = t.device("cuda")
     benchmark.pedantic(
         compute_sparse_isn,
-        args=(data, None, i_m, "incremental_pearson", None),
+        args=(data, None, i_m, "incremental_pearson", None, device),
         rounds=20,
         iterations=3,
     )
 
+
 @pytest.mark.benchmark
-def test_sparse_1000_10000(benchmark):
+def test_sparse_1000_10000_cuda(benchmark):
     data = continuous(1000, 10000)
     i_m = interactions(7000)
-    # device = t.device("cuda")
+    device = t.device("cuda")
     benchmark.pedantic(
         compute_sparse_isn,
-        args=(data, None, i_m, "incremental_pearson", None),
+        args=(data, None, i_m, "incremental_pearson", None, device),
         rounds=20,
         iterations=3,
     )
-'''
+
+
 @pytest.mark.benchmark
-def test_sparse_2000_10000(benchmark):
+def test_sparse_2000_10000_cuda(benchmark):
     data = continuous(2000, 10000)
     i_m = interactions(8000)
-    # device = t.device("cuda")
+    device = t.device("cuda")
     benchmark.pedantic(
         compute_sparse_isn,
-        args=(data, None, i_m, "incremental_pearson", None),
+        args=(data, None, i_m, "incremental_pearson", None, device),
         rounds=20,
         iterations=3,
     )
 
 
-
-"""
 @pytest.mark.benchmark
-def test_dense_200_10000(benchmark):
+def test_dense_200_10000_cuda(benchmark):
     data = continuous(200, 10000)
-    #device = t.device("cuda")
-    benchmark.pedantic(compute_dense_isn, args=(data,), rounds=20, iterations=3)
+    device = t.device("cuda")
+    benchmark.pedantic(compute_dense_isn, args=(data, device), rounds=20, iterations=3)
+
 
 @pytest.mark.benchmark
-def test_dense_500_5000(benchmark):
+def test_dense_500_5000_cuda(benchmark):
     data = continuous(500, 5000)
-    #device = t.device("cuda")
-    benchmark.pedantic(compute_dense_isn, args=(data,), rounds=20, iterations=3)
+    device = t.device("cuda")
+    benchmark.pedantic(compute_dense_isn, args=(data, device), rounds=20, iterations=3)
+
 
 @pytest.mark.benchmark
-def test_dense_500_10000(benchmark):
+def test_dense_500_10000_cuda(benchmark):
     data = continuous(500, 10000)
-    #device = t.device("cuda")
-    benchmark.pedantic(compute_dense_isn, args=(data,), rounds=20, iterations=3)
+    device = t.device("cuda")
+    benchmark.pedantic(compute_dense_isn, args=(data, device), rounds=20, iterations=3)
+
 
 @pytest.mark.benchmark
-def test_dense_1000_5000(benchmark):
+def test_dense_1000_5000_cuda(benchmark):
     data = continuous(1000, 5000)
-    #device = t.device("cuda")
-    benchmark.pedantic(compute_dense_isn, args=(data,), rounds=20, iterations=3)
+    device = t.device("cuda")
+    benchmark.pedantic(compute_dense_isn, args=(data, device), rounds=20, iterations=3)
+
 
 @pytest.mark.benchmark
-def test_dense_1000_10000(benchmark):
+def test_dense_1000_10000_cuda(benchmark):
     data = continuous(1000, 10000)
-    #device = t.device("cuda")
-    benchmark.pedantic(compute_dense_isn, args=(data,), rounds=20, iterations=3)
-"""
+    device = t.device("cuda")
+    benchmark.pedantic(compute_dense_isn, args=(data, device), rounds=20, iterations=3)
