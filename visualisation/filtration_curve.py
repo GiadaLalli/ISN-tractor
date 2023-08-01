@@ -228,8 +228,7 @@ if __name__ == "__main__":
     output = sys.argv[3] if sys.argv[3] != "-" else None
 
     sig = np.asarray(TOP_EDGES)
-    nodes = np.asarray(TOP_NODES)
-    expr = pd.read_csv(expr_filename).loc[:, nodes]
+    expr = pd.read_csv(expr_filename).loc[:, np.asarray(TOP_NODES)]
     clinic = pd.read_csv(clinic_filename)
     clinic["mets"] = clinic["mets"].replace({"yes": 1, "no": 0})
 
@@ -245,7 +244,8 @@ if __name__ == "__main__":
     ).loc[:, sig]
 
     # Filtration curve
-    df = pd.concat([ISNs, clinic.rename(index=clinic["sample"])["mets"]], axis=1)
-    df.to_csv("isns.csv")
-
-    plot_filtration_curve(df, label_column="mets", output=output)
+    plot_filtration_curve(
+        pd.concat([ISNs, clinic.rename(index=clinic["sample"])["mets"]], axis=1),
+        label_column="mets",
+        output=output,
+    )
