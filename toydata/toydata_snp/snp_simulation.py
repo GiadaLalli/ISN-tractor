@@ -1,12 +1,14 @@
-#import libraries
+# import libraries
 import numpy as np
 import pandas as pd
 import pickle
 
+
 def onehot(x):
-    X = np.zeros((x.size, x.max()+1))
+    X = np.zeros((x.size, x.max() + 1))
     X[np.arange(x.size), x] = 1
-    return(X)
+    return X
+
 
 def generate(Ps, Cs):
     np.random.seed(1)
@@ -21,9 +23,10 @@ def generate(Ps, Cs):
 
     S = np.random.uniform(0, 1, size=(c1, c2))
 
-    R = G1 @ S @ G2.T 
+    R = G1 @ S @ G2.T
 
-    return(R, clust1, clust2)
+    return (R, clust1, clust2)
+
 
 def generate2(Ps, Cs):
     np.random.seed(1)
@@ -39,32 +42,42 @@ def generate2(Ps, Cs):
     maf2 = np.linspace(0.0, 0.2, c2)
     np.random.shuffle(maf1)
     np.random.shuffle(maf2)
-    MAF = MAF + np.tile(maf1, (c2,1)).T + np.tile(maf2, (c1,1))
-    MAF = np.random.uniform(0.01, 0.5, size=(c1,c2))
+    MAF = MAF + np.tile(maf1, (c2, 1)).T + np.tile(maf2, (c1, 1))
+    MAF = np.random.uniform(0.01, 0.5, size=(c1, c2))
 
     for i in range(c1):
         idx_i = np.where(clust1 == i)[0]
         for j in range(c2):
             idx_j = np.where(clust2 == j)[0]
-            maf = MAF[i,j]
-            block = np.random.choice([0,1,2], size=[len(idx_i), len(idx_j)], 
-                    p=[(1-maf)*(1-maf), 2*maf*(1-maf), maf*maf])
-            R[idx_i[0]:(idx_i[-1]+1), idx_j[0]:(idx_j[-1]+1)] = block
+            maf = MAF[i, j]
+            block = np.random.choice(
+                [0, 1, 2],
+                size=[len(idx_i), len(idx_j)],
+                p=[(1 - maf) * (1 - maf), 2 * maf * (1 - maf), maf * maf],
+            )
+            R[idx_i[0] : (idx_i[-1] + 1), idx_j[0] : (idx_j[-1] + 1)] = block
 
-    return(R.astype(int), clust1.astype(int), clust2.astype(int))
+    return (R.astype(int), clust1.astype(int), clust2.astype(int))
+
 
 R, clust1, clust2 = generate2([200, 1000], [5, 20])
 
 # save the SNP data
-path = 'path'
-header = ['SNP'+str(i+1) for i in range(R.shape[1])] + ['Pheno']
-np.savetxt(path + 'toydata_SNP.csv', np.hstack((R, clust1[:,None])),
-        delimiter=',', header=','.join(header), comments='', fmt="%i")
+path = "path"
+header = ["SNP" + str(i + 1) for i in range(R.shape[1])] + ["Pheno"]
+np.savetxt(
+    path + "toydata_SNP.csv",
+    np.hstack((R, clust1[:, None])),
+    delimiter=",",
+    header=",".join(header),
+    comments="",
+    fmt="%i",
+)
 
 # save the interactome
-genes = ['gene'+str(i+1) for i in range(20)]
+genes = ["gene" + str(i + 1) for i in range(20)]
 interact = np.array(np.meshgrid(genes, genes)).T.reshape(-1, 2)
-np.savetxt(path + 'toydata_interact_genes.csv', interact, delimiter=',', fmt="%s")
+np.savetxt(path + "toydata_interact_genes.csv", interact, delimiter=",", fmt="%s")
 
 # save the mapping
 mapping = []
@@ -73,17 +86,7 @@ for pair in interact:
     gene2 = int(pair[1][4:]) - 1
     snps1 = np.where(clust2 == gene1)[0]
     snps2 = np.where(clust2 == gene2)[0]
-    snps1 = ['SNP'+str(i+1) for i in snps1]
-    snps2 = ['SNP'+str(i+1) for i in snps2]
+    snps1 = ["SNP" + str(i + 1) for i in snps1]
+    snps2 = ["SNP" + str(i + 1) for i in snps2]
     mapping.append((snps1, snps2))
-pickle.dump(mapping, open(path + 'toydata_interact_snps.pkl', "wb"))
-
-
-
-
-
-
-
-
-
-
+pickle.dump(mapping, open(path + "toydata_interact_snps.pkl", "wb"))
