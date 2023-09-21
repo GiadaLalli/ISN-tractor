@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
 
+import isn_tractor.ibisn as it
+
 """
 This example shows the step-by-step workflow to make use of this library.
 It also includes generation of all input data in the recommended format.
