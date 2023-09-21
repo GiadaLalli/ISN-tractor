@@ -135,6 +135,19 @@ def impute_chunked(
     return imputed
 
 
+# ## Imputation for gene expression
+def impute_gene(gene_df):
+    for j in range(gene_df.shape[1]):
+        gene = gene_df.iloc[:, j]
+        miss = np.isnan(gene)
+        if np.sum(miss) == 0:
+            continue
+        # compute the mode genotype of every SNP
+        mod = np.nanmean(gene)
+        gene_df.iloc[miss, j] = mod
+    return gene_df
+
+
 # ## Mapping
 
 
@@ -255,6 +268,9 @@ def __spearman_metric(first, second):
             data[:, i] = csum[inv]
         corr = t.corrcoef(data.T)[: first.shape[1], first.shape[1] :]
     return corr
+
+
+# ## Metrics for gene expression
 
 
 def __dot_metric(first, second):
