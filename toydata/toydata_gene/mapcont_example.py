@@ -6,7 +6,6 @@
 import pandas as pd
 import numpy as np
 import sys
-import allel
 from scipy.stats import spearmanr, pearsonr
 from sklearn.metrics import normalized_mutual_info_score as mutual_info
 import torch as t

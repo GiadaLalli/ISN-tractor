@@ -7,7 +7,7 @@ import pandas as pd
 # data import
 snp_data = pd.read_csv("toydata_SNP.csv")
 int_genes = pd.read_csv("toydata_interact_genes.csv")
-with open("toydata_interact_snps.csv", "rb") as file_handle:
+with open("toydata_interact_snps.pkl", "rb") as file_handle:
     int_snp = pickle.load(file_handle)
 
 # removing autocorrelations
@@ -23,4 +23,4 @@ int_snp = [int_snp[x] for x in rows_to_remove]
 df = df.iloc[rows_to_remove, :]
 
 # ISNs computation
-isn = it.compute_isn(snp_data, int_snp, df, "metric", "pooling")
+isn = it.sparse_isn(snp_data, int_snp, df, "pearson", "avg")

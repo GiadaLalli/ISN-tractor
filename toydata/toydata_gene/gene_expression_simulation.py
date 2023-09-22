@@ -4,7 +4,7 @@ import numpy as np
 import isn_tractor.ibisn as it
 
 # data import
-interact = pd.read_csv("HuRI")
+interact = pd.read_csv("HuRI.tsv")
 gtf = pd.read_csv("GRCh38_assembly")
 corr = pd.read_csv("genename_geneid_correlation")
 id_list = gtf.index.tolist()  # list of the ensembl_id
