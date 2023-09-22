@@ -24,7 +24,7 @@ gtf = pd.read_csv(
     compression="gzip",
     skiprows=5,
 )
-corr = pd.read_csv("genename_geneid_correlation")
+corr = pd.read_csv("corr_genename_ensid.txt")
 id_list = gtf.index.tolist()  # list of the ensembl_id
 
 # preprocessing
