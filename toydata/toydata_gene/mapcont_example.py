@@ -1,40 +1,41 @@
-#!/usr/bin/env python
-# coding: utf-8
+"""
+This toy example demonstrates how to work with mapped continuous data.
 
+The dataset was artificially generated to resemble realistic gene expression
+data by utilizing the actual Human Genome Assembly (GRCh38 version p.13) and
+the real Interactome (HuRI, by Luck et al., 2020); ensembl_ids were associated
+to the genes through BioMart.
+The imputation process was performed prior to the computation of both
+sparse and dense version of ISNs.
+"""
 
-# import libraries
+from pathlib import Path
+import urllib.request as req
+
 import pandas as pd
 import numpy as np
-import sys
-from scipy.stats import spearmanr, pearsonr
-from sklearn.metrics import normalized_mutual_info_score as mutual_info
-import torch as t
 import isn_tractor.ibisn as it
-import random
-import time
 
-# data managing
-import pickle
-import marshal
-
-"""
-This toy example demonstrates how to work with mapped continuous data. 
-The dataset was artificially generated to resemble realistic gene expression 
-data by utilizing the actual Human Genome Assembly (GRCh38 version p.13) and 
-the real Interactome (HuRI, by Luck et al., 2020); ensembl_ids were associated
-to the genes through BioMart. 
-The imputation process was performed prior to the computation of both 
-sparse and dense version of ISNs.
-
-"""
 
 # data import
 
 # HuRI
 interact = pd.read_csv("HuRI.tsv", delimiter="\t", engine="python", header=None)
 # HumanGenome - GRCh38 version p.13
+gtf_path = Path("Homo_sapiens.GRCh38.105.chr.gtf.gz")
+if not gtf_path.exists():
+    with req.urlopen(
+        "https://ftp.ensembl.org/pub/release-105/gtf/homo_sapiens/Homo_sapiens.GRCh38.105.chr.gtf.gz"
+    ) as response:
+        gtf_path.write_bytes(response.read())
+
 gtf = pd.read_csv(
-    "Homo_sapiens.GRCh38.105.chr.gtf", delimiter="\t", engine="python", header=None
+    "Homo_sapiens.GRCh38.105.chr.gtf.gz",
+    delimiter="\t",
+    engine="python",
+    header=None,
+    compression="gzip",
+    skiprows=5,
 )
 # HumanGenome Preprocessing
 gtf = it.preprocess_gtf(gtf)

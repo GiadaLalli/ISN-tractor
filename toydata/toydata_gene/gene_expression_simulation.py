@@ -1,11 +1,29 @@
-# import libraries
+from pathlib import Path
+import urllib.request as req
+
 import pandas as pd
 import numpy as np
 import isn_tractor.ibisn as it
 
 # data import
 interact = pd.read_csv("HuRI.tsv")
-gtf = pd.read_csv("GRCh38_assembly")
+
+# HumanGenome - GRCh38 version p.13
+gtf_path = Path("Homo_sapiens.GRCh38.105.chr.gtf.gz")
+if not gtf_path.exists():
+    with req.urlopen(
+        "https://ftp.ensembl.org/pub/release-105/gtf/homo_sapiens/Homo_sapiens.GRCh38.105.chr.gtf.gz"
+    ) as response:
+        gtf_path.write_bytes(response.read())
+
+gtf = pd.read_csv(
+    "Homo_sapiens.GRCh38.105.chr.gtf.gz",
+    delimiter="\t",
+    engine="python",
+    header=None,
+    compression="gzip",
+    skiprows=5,
+)
 corr = pd.read_csv("genename_geneid_correlation")
 id_list = gtf.index.tolist()  # list of the ensembl_id
 
