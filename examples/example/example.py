@@ -1,35 +1,30 @@
-import pandas as pd
-import numpy as np
-
-import isn_tractor.ibisn as it
-
 """
 This example shows the step-by-step workflow to make use of this library.
 It also includes generation of all input data in the recommended format.
 """
 
+import pandas as pd
+import numpy as np
 
-def dataframe(size, values):
-    n_rows, n_cols = size
-    mapped = "mapped" if "mapped" in values else "unmapped"
-
-    if "discrete" in values:
-        data = np.random.randint(0, 3, size=(n_rows, n_cols))
-    elif "continuous" in values:
-        data = np.random.uniform(0, 100, size=(n_rows, n_cols))
-    else:
-        raise ValueError("Values must contain either 'discrete' or 'continuous'")
-
-    col_names = [mapped + "_" + "feature" + "_" + str(i) for i in range(n_cols)]
-    index_names = ["sample_" + str(i) for i in range(n_rows)]
-
-    df = pd.DataFrame(data, index=index_names, columns=col_names)
-
-    return df
+import isn_tractor.ibisn as it
 
 
-u_df = dataframe((200, 1000000), ["unmapped", "discrete"])
-m_df = dataframe((200, 100), ["mapped", "continuous"])
+def mock_mapped(size: tuple[int, int]) -> pd.DataFrame:
+    "These data are generally gene expression-like data which are continuous."
+    rows, cols = size
+    data = np.random.uniform(0, 100, size=size)
+    col_names = [f"mapped_feature_{i}" for i in range(cols)]
+    index_names = [f"sample_{i}" for i in range(rows)]
+    return pd.DataFrame(data, index=index_names, columns=col_names)
+
+
+def mock_unmapped(size: tuple[int, int]) -> pd.DataFrame:
+    "Unmapped data is always discrete (e.g. SNP data)."
+    rows, cols = size
+    data = np.random.randint(0, 3, size=size)
+    col_names = [f"unmapped_feature_{i}" for i in range(cols)]
+    index_names = [f"sample_{i}" for i in range(rows)]
+    return pd.DataFrame(data, index=index_names, columns=col_names)
 
 
 def interactions(n_rows):
@@ -52,9 +47,6 @@ def interactions(n_rows):
     interact_df = interact_df.sort_index()
 
     return interact_df
-
-
-interact = interactions(100)
 
 
 def mapped_info(df):
@@ -85,9 +77,6 @@ def mapped_info(df):
     return data_frame
 
 
-mapped_info = mapped_info(m_df)
-
-
 def unmapped_info(df):
     rows = df.shape[1]
     location = [2 * i for i in range(rows)]
@@ -97,22 +86,27 @@ def unmapped_info(df):
     )
 
 
-unmapped_info = unmapped_info(u_df)
+if __name__ == "__main__":
+    u_df = mock_unmapped((200, 1_000_000))
+    m_df = mock_mapped((200, 100))
+    interact = interactions(100)
+    mapped_info = mapped_info(m_df)
+    unmapped_info = unmapped_info(u_df)
 
-# interaction mapping
-interact_unmapped, interact_mapped = it.map_interaction(
-    interact, unmapped_info, mapped_info, neighborhood=20
-)
+    # interaction mapping
+    interact_unmapped, interact_mapped = it.map_interaction(
+        interact, mapped_info=mapped_info, unmapped_info=unmapped_info, neighborhood=20
+    )
 
-# ISNs computation
-# dense with discrete values
-d_isn = it.dense_isn(m_df, metric="pearson")
-# sparse with:
-# continuous values
-s_c_isn = it.sparse_isn(
-    u_df, interact_unmapped, interact_mapped, metric="pearson", pool="avg"
-)
-# discrete values
-s_d_isn = it.sparse_isn(
-    m_df, interact_unmapped=None, interact_mapped=interact_mapped, metric="pearson"
-)
+    # ISNs computationw
+    # dense with continuous values
+    d_isn = it.dense_isn(m_df)
+    # sparse with:
+    # discrete values
+    s_c_isn = it.sparse_isn(
+        u_df, interact_unmapped, interact_mapped, metric="pearson", pool="avg"
+    )
+    # continuous values
+    s_d_isn = it.sparse_isn(
+        m_df, interact_unmapped=None, interact_mapped=interact_mapped, metric="pearson"
+    )
