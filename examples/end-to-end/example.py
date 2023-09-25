@@ -98,7 +98,7 @@ if __name__ == "__main__":
         interact, mapped_info=mapped_info, unmapped_info=unmapped_info, neighborhood=20
     )
 
-    # ISNs computationw
+    # ISNs computation
     # dense with continuous values
     d_isn = it.dense_isn(m_df)
     # sparse with:
