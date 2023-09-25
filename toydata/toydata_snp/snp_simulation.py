@@ -1,34 +1,9 @@
-# import libraries
-import numpy as np
-import pandas as pd
 import pickle
 
-
-def onehot(x):
-    X = np.zeros((x.size, x.max() + 1))
-    X[np.arange(x.size), x] = 1
-    return X
+import numpy as np
 
 
 def generate(Ps, Cs):
-    np.random.seed(1)
-    p1, p2 = Ps
-    c1, c2 = Cs
-
-    clust1 = np.sort(np.random.choice(c1, size=p1, replace=True))
-    clust2 = np.sort(np.random.choice(c2, size=p2, replace=True))
-
-    G1 = onehot(clust1)
-    G2 = onehot(clust2)
-
-    S = np.random.uniform(0, 1, size=(c1, c2))
-
-    R = G1 @ S @ G2.T
-
-    return (R, clust1, clust2)
-
-
-def generate2(Ps, Cs):
     np.random.seed(1)
     p1, p2 = Ps
     c1, c2 = Cs
@@ -60,33 +35,33 @@ def generate2(Ps, Cs):
     return (R.astype(int), clust1.astype(int), clust2.astype(int))
 
 
-R, clust1, clust2 = generate2([200, 1000], [5, 20])
+if __name__ == "__main__":
+    R, clust1, clust2 = generate([200, 1000], [5, 20])
 
-# save the SNP data
-path = "path"
-header = ["SNP" + str(i + 1) for i in range(R.shape[1])] + ["Pheno"]
-np.savetxt(
-    path + "toydata_SNP.csv",
-    np.hstack((R, clust1[:, None])),
-    delimiter=",",
-    header=",".join(header),
-    comments="",
-    fmt="%i",
-)
+    # save the SNP data
+    header = ["SNP" + str(i + 1) for i in range(R.shape[1])] + ["Pheno"]
+    np.savetxt(
+        "toydata_SNP.csv",
+        np.hstack((R, clust1[:, None])),
+        delimiter=",",
+        header=",".join(header),
+        comments="",
+        fmt="%i",
+    )
 
-# save the interactome
-genes = ["gene" + str(i + 1) for i in range(20)]
-interact = np.array(np.meshgrid(genes, genes)).T.reshape(-1, 2)
-np.savetxt(path + "toydata_interact_genes.csv", interact, delimiter=",", fmt="%s")
+    # save the interactome
+    genes = ["gene" + str(i + 1) for i in range(20)]
+    interact = np.array(np.meshgrid(genes, genes)).T.reshape(-1, 2)
+    np.savetxt("toydata_interact_genes.csv", interact, delimiter=",", fmt="%s")
 
-# save the mapping
-mapping = []
-for pair in interact:
-    gene1 = int(pair[0][4:]) - 1
-    gene2 = int(pair[1][4:]) - 1
-    snps1 = np.where(clust2 == gene1)[0]
-    snps2 = np.where(clust2 == gene2)[0]
-    snps1 = ["SNP" + str(i + 1) for i in snps1]
-    snps2 = ["SNP" + str(i + 1) for i in snps2]
-    mapping.append((snps1, snps2))
-pickle.dump(mapping, open(path + "toydata_interact_snps.pkl", "wb"))
+    # save the mapping
+    mapping = []
+    for pair in interact:
+        gene1 = int(pair[0][4:]) - 1
+        gene2 = int(pair[1][4:]) - 1
+        snps1 = np.where(clust2 == gene1)[0]
+        snps2 = np.where(clust2 == gene2)[0]
+        mapping.append(([f"SNP{i+1}" for i in snps1], [f"SNP{i+1}" for i in snps2]))
+
+    with open("toydata_interact_snps.pkl", "wb") as mappingfile:
+        pickle.dump(mapping, mappingfile)

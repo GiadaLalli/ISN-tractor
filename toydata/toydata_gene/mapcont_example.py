@@ -14,6 +14,7 @@ import urllib.request as req
 
 import pandas as pd
 import numpy as np
+
 import isn_tractor.ibisn as it
 
 
@@ -42,7 +43,8 @@ gtf = it.preprocess_gtf(gtf)
 # ENSEMBL_id
 index_list = gtf.index.tolist()
 
-# extracted ALL the ensembl_ids from the GRCh38, processed on Biomart to get the needed info
+# extracted ALL the ensembl_ids from the GRCh38, processed on Biomart to get
+# the needed info
 corr = pd.read_csv("corr_genename_ensid.txt", delimiter=",", engine="python")
 corr = corr.dropna(subset=["Gene name"])
 corr = corr[corr["Gene stable ID"].isin(index_list)]
@@ -50,7 +52,8 @@ corr = corr.drop_duplicates(subset="Gene stable ID", keep=False)
 
 # Data creation:
 
-# create random sampleXgene dataset with 200 rows and 1000 columns of random floating values in range
+# create random sampleXgene dataset with 200 rows and 1000 columns of random
+# floating values in range
 np.random.seed(123)
 df2 = pd.DataFrame(np.random.uniform(-50, +50, (200, 1000)))
 
