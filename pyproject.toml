@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "isn-tractor"
-version = "0.2.0"
+version = "0.2.1"
 description = "Interactome based Individual Specific Networks"
 authors = ["Giada Lalli <giada.lalli@kuleuven.be>",
            "Zuqi Li <zuqi.li@kuleuven.be>",
