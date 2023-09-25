@@ -48,4 +48,4 @@ df.columns = choices(
 nan_indices = np.random.choice(df.size, size=500, replace=False)  # add some NaN
 df.values.ravel()[nan_indices] = np.nan
 # save the data
-df.to_csv(r"toydata_gene", sep=",", index=False)
+df.to_csv(r"gene", sep=",", index=False)

@@ -1,13 +1,14 @@
-# import libraries
-import numpy as np
-import isn_tractor.ibisn as it
 import pickle
+
+import numpy as np
 import pandas as pd
 
+import isn_tractor.ibisn as it
+
 # data import
-snp_data = pd.read_csv("toydata_SNP.csv")
-int_genes = pd.read_csv("toydata_interact_genes.csv")
-with open("toydata_interact_snps.pkl", "rb") as file_handle:
+snp_data = pd.read_csv("example_SNP.csv")
+int_genes = pd.read_csv("example_interact_genes.csv")
+with open("example_interact_snps.pkl", "rb") as file_handle:
     int_snp = pickle.load(file_handle)
 
 # removing autocorrelations

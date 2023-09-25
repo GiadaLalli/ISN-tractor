@@ -52,7 +52,7 @@ if __name__ == "__main__":
     # save the interactome
     genes = ["gene" + str(i + 1) for i in range(20)]
     interact = np.array(np.meshgrid(genes, genes)).T.reshape(-1, 2)
-    np.savetxt("toydata_interact_genes.csv", interact, delimiter=",", fmt="%s")
+    np.savetxt("example_interact_genes.csv", interact, delimiter=",", fmt="%s")
 
     # save the mapping
     mapping = []
@@ -63,5 +63,5 @@ if __name__ == "__main__":
         snps2 = np.where(clust2 == gene2)[0]
         mapping.append(([f"SNP{i+1}" for i in snps1], [f"SNP{i+1}" for i in snps2]))
 
-    with open("toydata_interact_snps.pkl", "wb") as mappingfile:
+    with open("example_interact_snps.pkl", "wb") as mappingfile:
         pickle.dump(mapping, mappingfile)

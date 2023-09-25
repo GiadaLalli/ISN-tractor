@@ -68,8 +68,8 @@ nan_indices = np.random.choice(df2.size, size=500, replace=False)
 df2.values.ravel()[nan_indices] = np.nan
 
 
-# save toydata generated as above
-# df2.to_csv(r'toydata_X.csv', sep=',', index = False)
+# save example data generated as above
+# df2.to_csv(r'example_X.csv', sep=',', index = False)
 
 # process the newly created df to remove NaN
 imputed = it.impute(df2, replace=it.mean_genotype)
