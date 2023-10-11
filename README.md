@@ -91,7 +91,7 @@ If you have an idea for how to improve this, please fork the repository and subm
 5. Open a Pull Request
 
 ## License
-MIT License (https://github.com/GiadaLalli/ISN-tractor/blob/main/LICENSE).
+[MIT License](https://github.com/GiadaLalli/ISN-tractor/blob/main/LICENSE).
 
 ## Contact
 Giada Lalli - giada.lalli@kuleuven.be
@@ -101,5 +101,5 @@ Zuqi Li - zuqi.li@kuleuven.be
 Federico Melograna - federico.melograna@kuleuven.be
 
 ## Acknowledgments
-Many thanks to Daniele Raimondi (https://www.kuleuven.be/wieiswie/en/person/00119412) and James Collier (https://technologytraining.sites.vib.be/en/team) whose collaboration made possible the finalization of this project. 
+Many thanks to [Daniele Raimondi](https://www.kuleuven.be/wieiswie/en/person/00119412) and [James Collier](https://technologytraining.sites.vib.be/en/team) whose collaboration made possible the finalization of this project. 
 
