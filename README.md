@@ -39,7 +39,7 @@ pip install isn-tractor
 Quickstart
 ==========
 
-The ``examples`` and ``visualisation` folders contain some scripts showing how the ``ISN-Tractor`` library can be used.
+The ``examples`` and ``visualisation`` folders contain some scripts showing how the ``ISN-Tractor`` library can be used.
 
 1. Data preprocessing and imputation
 
