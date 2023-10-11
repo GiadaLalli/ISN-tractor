@@ -8,8 +8,8 @@ You can install ISN-Tractor from the GitHub Repository (ref) or from our PyPi pa
 
 In either ways, we recommend to follow these steps:
 
-- James help me
-- with life please
+- TBA
+- TBA
 
 Install from git repo
 ^^^^^^^^^^^^^^^^^^^^^
