@@ -24,11 +24,22 @@ was the impetus for our decision to create a novel approach for computing intera
 
 ### Installation
 
+You can install ISN-Tractor from the GitHub Repository:
+
+```bash
+pip install git+https://github.com/GiadaLalli/ISN-tractor
+```
+
+or from our [PyPi package](https://pypi.org/project/isn-tractor/):
+
 ```bash
 pip install isn-tractor
 ```
 
-## Usage
+Quickstart
+==========
+
+The ``examples`` and ``visualisation` folders contain some scripts showing how the ``ISN-Tractor`` library can be used.
 
 1. Data preprocessing and imputation
 
@@ -102,4 +113,23 @@ Federico Melograna - federico.melograna@kuleuven.be
 
 ## Acknowledgments
 Many thanks to [Daniele Raimondi](https://www.kuleuven.be/wieiswie/en/person/00119412) and [James Collier](https://technologytraining.sites.vib.be/en/team) whose collaboration made possible the finalization of this project. 
+
+How to cite
+===========
+
+If you find this library useful, please cite: 
+
+About us
+========
+
+This library has been developed until October 2023 at KU Leuven, Belgium and funded by the European Union's Horizon 2020 research and innovation programme under the H2020 Marie Skłodowska-Curie grant agreement (No. 860895 to GL, ZL, FM). 
+
+Disclaimer
+==========
+
+I did my best effort to make this library available to anyone, but bugs might be present.
+Should you experience problems in using or installing it, or just to share any comment, please contact giada [dot] lalli [at] kuleuven [dot] be and zuqi [dot] li [at] kuleuven [dot] be.
+
+
+
 
