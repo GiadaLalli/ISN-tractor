@@ -62,9 +62,9 @@ The ``examples`` and ``visualisation`` folders contain some scripts showing how 
 
 ### Data format
 
-### Example 1: dense gene-based ISNs computation
+### Example 1: gene-based ISNs computation
 
-### Example 2: sparse SNP-based ISNs computation
+### Example 2: SNP-based ISNs computation
 
 
 ## Roadmap
