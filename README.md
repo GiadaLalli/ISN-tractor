@@ -60,11 +60,9 @@ Quickstart
 
 The ``examples`` and ``visualisation`` folders contain some scripts showing how the ``ISN-Tractor`` library can be used.
 
-### [Data format](https://github.com/GiadaLalli/ISN-tractor/blob/main/examples/end-to-end/example.py)
-
-### [Example 1: gene-based ISNs computation](https://github.com/GiadaLalli/ISN-tractor/tree/main/examples/gene)
-
-### [Example 2: SNP-based ISNs computation](https://github.com/GiadaLalli/ISN-tractor/tree/main/examples/snp)
+- [Data format](https://github.com/GiadaLalli/ISN-tractor/blob/main/examples/end-to-end/example.py)
+- [Example 1: gene-based ISNs computation](https://github.com/GiadaLalli/ISN-tractor/tree/main/examples/gene)
+- [Example 2: SNP-based ISNs computation](https://github.com/GiadaLalli/ISN-tractor/tree/main/examples/snp)
 
 
 ## Roadmap
