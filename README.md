@@ -1,5 +1,6 @@
 # ISN-tractor
 Interactome based Individual Specific Networks (Ib-ISN)
+![ISN-Tractor Logo](ISN.svg)
 
 ## What is ISN-Tractor?
 ISN-tractor is a Python package designed for the computation of Individual-Specific Networks (ISNs) from multiple omics. By identifying differential feature-expression and edges between samples, ISNs can provide valuable insights into personalized expression networks. ISN-tractor is a user-friendly tool that offers a simple interface for analyzing multiple datasets and generating ISNs. It can be applied to various organisms, including humans, animals, and plants. Thus, ISN-tractor is a powerful and versatile tool for identifying personalized feature expression networks in different contexts.
