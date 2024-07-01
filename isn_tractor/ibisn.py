@@ -3,6 +3,7 @@ Interactome based Individual Specific Networks (Ib-ISN)
 
 Copyright 2023 Giada Lalli
 """
+
 from typing import Union, Literal, Tuple, List, Any, Callable, Optional
 import pandas as pd
 import numpy as np

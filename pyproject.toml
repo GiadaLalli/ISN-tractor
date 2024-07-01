@@ -5,43 +5,36 @@ description = "Interactome based Individual Specific Networks"
 authors = ["Giada Lalli <giada.lalli@kuleuven.be>",
            "Zuqi Li <zuqi.li@kuleuven.be>",
            "Federico Melograna <federico.melograna@kuleuven.be>",
-           "VIB Bioinformatics Core Facility <bits@vib.be>"]
+           "James Collier <james.collier@vib.be>"]
 readme = "README.md"
 license = "MIT"
 packages = [{include = "isn_tractor"}]
 repository = "https://github.com/GiadaLalli/ISN-tractor"
 
 [tool.poetry.dependencies]
-python = ">=3.8,<3.12"
-pandas = "^1.5.2"
-numpy = "^1.24.1"
-scipy = "^1.10.0"
-scikit-learn = "^1.2.0"
-torch = "^2.0.1"
-sympy = "^1.12"
+python = ">=3.9,<3.13"
+pandas = "^2.2.2"
+numpy = "^2.0.0"
+torch = "^2.3.1"
 
 
 [tool.poetry.group.dev.dependencies]
-black = "^23.1.0"
-pylint = "^2.15.10"
-pytest = "^7.2.0"
-mypy = "^1.0.1"
-pytest-cov = "^4.0.0"
+black = "^24.4.2"
+pylint = "^3.2.5"
+pytest = "^8.2.2"
+mypy = "^1.10.1"
+pytest-cov = "^5.0.0"
+scipy = "^1.13.0"
+scikit-learn = "^1.5.0"
 
 
 [tool.poetry.group.benchmark.dependencies]
 pytest-benchmark = "^4.0.0"
-pyperf = "^2.6.0"
+pyperf = "^2.7.0"
 
 
 [tool.poetry.group.visualization.dependencies]
 networkx = "^3.1"
-
-
-[[tool.poetry.source]]
-name = "PyPI"
-priority = "default"
-
 
 [build-system]
 requires = ["poetry-core"]
@@ -58,5 +51,7 @@ generated-members = "t.tensor,t.matmul,t.arange,t.corrcoef,t.cat,t.argsort,t.zer
 
 [tool.pytest.ini_options]
 markers = [
-    "benchmark: marks tests as benchmarks (deselect with '-m \"not benchmark\"')"
+    "benchmark_cpu_dense: marks tests as CPU benchmarks for dense ISNs (select with '-m benchmark_cpu_dense')",
+    "benchmark_cpu_sparse: marks tests as CPU benchmarks for sparse ISNs (select with '-m benchmark_cpu_sparse')",
+    "benchmark_cuda: marks tests as GPU benchmarks (select with '-m benchmark_cuda')"
 ]
