@@ -1,7 +1,9 @@
 import pytest
 from isn_tractor.ibisn import sparse_isn, dense_isn, __spearman_metric
+from benchmark.dense_isn_offline import dense_isn_offline
 
-from numpy import array, zeros, concatenate, corrcoef, int64, float32
+# from numpy import array, concatenate, corrcoef, float32, nan, arange, repeat, tile
+import numpy as np
 import pandas as pd
 from pandas.testing import assert_frame_equal
 from sklearn.metrics import normalized_mutual_info_score as mutual_info
@@ -24,8 +26,8 @@ def my_pearson_metric(first, second):
     if (first.dim(), second.dim()) == (1, 1):
         return t.tensor(pearsonr(first.numpy(), second.numpy()).statistic)
 
-    combined = concatenate([first, second], axis=1)
-    return t.tensor(corrcoef(combined.T)[: first.shape[1], first.shape[1]])
+    combined = np.concatenate([first, second], axis=1)
+    return t.tensor(np.corrcoef(combined.T)[: first.shape[1], first.shape[1]])
 
 
 def my_spearman_metric(first, second):
@@ -52,8 +54,8 @@ def test_snp_pearson_avg():
     )
     interact_snp = [
         (
-            array(["snp_jcstj", "snp_dvxkv"], dtype=object),
-            array(["snp_jcstj", "snp_dvxkv"], dtype=object),
+            np.array(["snp_jcstj", "snp_dvxkv"], dtype=object),
+            np.array(["snp_jcstj", "snp_dvxkv"], dtype=object),
         )
     ]
     interact_gene = pd.DataFrame(
@@ -80,8 +82,8 @@ def test_snp_pearson_max():
     )
     interact_snp = [
         (
-            array(["snp_jcstj", "snp_dvxkv"], dtype=object),
-            array(["snp_jcstj", "snp_dvxkv"], dtype=object),
+            np.array(["snp_jcstj", "snp_dvxkv"], dtype=object),
+            np.array(["snp_jcstj", "snp_dvxkv"], dtype=object),
         )
     ]
     interact_gene = pd.DataFrame(
@@ -108,8 +110,8 @@ def test_snp_spearman_avg():
     )
     interact_snp = [
         (
-            array(["snp_jcstj", "snp_dvxkv"], dtype=object),
-            array(["snp_jcstj", "snp_dvxkv"], dtype=object),
+            np.array(["snp_jcstj", "snp_dvxkv"], dtype=object),
+            np.array(["snp_jcstj", "snp_dvxkv"], dtype=object),
         )
     ]
     interact_gene = pd.DataFrame(
@@ -137,8 +139,8 @@ def test_snp_spearman_max():
     )
     interact_snp = [
         (
-            array(["snp_jcstj", "snp_dvxkv"], dtype=object),
-            array(["snp_jcstj", "snp_dvxkv"], dtype=object),
+            np.array(["snp_jcstj", "snp_dvxkv"], dtype=object),
+            np.array(["snp_jcstj", "snp_dvxkv"], dtype=object),
         )
     ]
     interact_gene = pd.DataFrame(
@@ -165,8 +167,8 @@ def test_snp_mutual_info_avg():
     )
     interact_snp = [
         (
-            array(["snp_jcstj", "snp_dvxkv"], dtype=object),
-            array(["snp_jcstj", "snp_dvxkv"], dtype=object),
+            np.array(["snp_jcstj", "snp_dvxkv"], dtype=object),
+            np.array(["snp_jcstj", "snp_dvxkv"], dtype=object),
         )
     ]
     interact_gene = pd.DataFrame(
@@ -193,8 +195,8 @@ def test_snp_mutual_info_max():
     )
     interact_snp = [
         (
-            array(["snp_jcstj", "snp_dvxkv"], dtype=object),
-            array(["snp_jcstj", "snp_dvxkv"], dtype=object),
+            np.array(["snp_jcstj", "snp_dvxkv"], dtype=object),
+            np.array(["snp_jcstj", "snp_dvxkv"], dtype=object),
         )
     ]
     interact_gene = pd.DataFrame(
@@ -221,8 +223,8 @@ def test_snp_dot_avg():
     )
     interact_snp = [
         (
-            array(["snp_jcstj", "snp_dvxkv"], dtype=object),
-            array(["snp_jcstj", "snp_dvxkv"], dtype=object),
+            np.array(["snp_jcstj", "snp_dvxkv"], dtype=object),
+            np.array(["snp_jcstj", "snp_dvxkv"], dtype=object),
         )
     ]
     interact_gene = pd.DataFrame(
@@ -249,8 +251,8 @@ def test_snp_dot_max():
     )
     interact_snp = [
         (
-            array(["snp_jcstj", "snp_dvxkv"], dtype=object),
-            array(["snp_jcstj", "snp_dvxkv"], dtype=object),
+            np.array(["snp_jcstj", "snp_dvxkv"], dtype=object),
+            np.array(["snp_jcstj", "snp_dvxkv"], dtype=object),
         )
     ]
     interact_gene = pd.DataFrame(
@@ -278,20 +280,20 @@ def test_snp_larger():
     )
     interact_snp = [
         (
-            array(["snp_a", "snp_b", "snp_c", "snp_d"], dtype=object),
-            array(["snp_a", "snp_b", "snp_c", "snp_d"], dtype=object),
+            np.array(["snp_a", "snp_b", "snp_c", "snp_d"], dtype=object),
+            np.array(["snp_a", "snp_b", "snp_c", "snp_d"], dtype=object),
         ),
         (
-            array(["snp_a", "snp_b", "snp_c", "snp_d"], dtype=object),
-            array(["snp_a", "snp_b", "snp_c", "snp_d"], dtype=object),
+            np.array(["snp_a", "snp_b", "snp_c", "snp_d"], dtype=object),
+            np.array(["snp_a", "snp_b", "snp_c", "snp_d"], dtype=object),
         ),
         (
-            array(["snp_a", "snp_b", "snp_c", "snp_d"], dtype=object),
-            array(["snp_a", "snp_b", "snp_c", "snp_d"], dtype=object),
+            np.array(["snp_a", "snp_b", "snp_c", "snp_d"], dtype=object),
+            np.array(["snp_a", "snp_b", "snp_c", "snp_d"], dtype=object),
         ),
         (
-            array(["snp_a", "snp_b", "snp_c", "snp_d"], dtype=object),
-            array(["snp_a", "snp_b", "snp_c", "snp_d"], dtype=object),
+            np.array(["snp_a", "snp_b", "snp_c", "snp_d"], dtype=object),
+            np.array(["snp_a", "snp_b", "snp_c", "snp_d"], dtype=object),
         ),
     ]
     interact_gene = pd.DataFrame(
@@ -346,8 +348,8 @@ def test_invalid_metric_with_data():
     )
     interact_snp = [
         (
-            array(["snp_jcstj", "snp_dvxkv"], dtype=object),
-            array(["snp_jcstj", "snp_dvxkv"], dtype=object),
+            np.array(["snp_jcstj", "snp_dvxkv"], dtype=object),
+            np.array(["snp_jcstj", "snp_dvxkv"], dtype=object),
         )
     ]
     interact_gene = pd.DataFrame(
@@ -373,8 +375,8 @@ def test_invalid_pool_with_data():
     )
     interact_snp = [
         (
-            array(["snp_jcstj", "snp_dvxkv"], dtype=object),
-            array(["snp_jcstj", "snp_dvxkv"], dtype=object),
+            np.array(["snp_jcstj", "snp_dvxkv"], dtype=object),
+            np.array(["snp_jcstj", "snp_dvxkv"], dtype=object),
         )
     ]
     interact_gene = pd.DataFrame(
@@ -599,10 +601,48 @@ def test_dense():
     )
 
     for x in expected.columns:
-        expected[x] = expected[x].astype(float32)
+        expected[x] = expected[x].astype(np.float32)
 
     new = pd.DataFrame(
-        [network.numpy().astype(float32) for network in dense_isn(gene_data.copy())],
+        [network.numpy().astype(np.float32) for network in dense_isn(gene_data.copy())],
         columns=out_columns,
     )
     assert_frame_equal(expected, new, rtol=0.00001, atol=0.00001)
+
+
+def test_dense_offline():
+    gene_data = pd.DataFrame(
+        [
+            (0.162634, 0.449745, 0.968108),
+            (0.409558, 0.092939, 0.284362),
+            (0.755906, 0.189236, 0.774311),
+            (0.834372, 0.159229, 0.475373),
+            (0.449133, 0.562913, 0.956922),
+        ],
+        columns=["gene1", "gene2", "gene3"],
+    )
+
+    out_columns = [
+        "gene1_gene1",
+        "gene1_gene2",
+        "gene1_gene3",
+        "gene2_gene1",
+        "gene2_gene2",
+        "gene2_gene3",
+        "gene3_gene1",
+        "gene3_gene2",
+        "gene3_gene3",
+    ]
+
+    online = pd.DataFrame(
+        [network.numpy().astype(np.float32) for network in dense_isn(gene_data.copy())],
+        columns=out_columns,
+    )
+
+    # offline = pd.DataFrame(dense_isn_offline(gene_data.copy()), columns=out_columns)
+    offline = pd.DataFrame(
+        [network.numpy() for network in dense_isn_offline(gene_data.copy())],
+        columns=out_columns,
+    )
+
+    assert_frame_equal(online, offline, rtol=0.00001, atol=0.00001)
