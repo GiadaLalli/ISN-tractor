@@ -25,6 +25,7 @@ Metric = Union[
     Literal["incremental_pearson"],
     Literal["spearman"],
     Literal["dot"],
+    Literal["biweight_midcorrelation"],
     MetricFn,
 ]
 
@@ -234,7 +235,7 @@ def __pearson_metric(first: t.Tensor, second: t.Tensor) -> t.Tensor:
     return t.corrcoef(combined.T)[: first.shape[1], first.shape[1]]
 
 
-def __spearman_metric(first, second):
+def __spearman_metric(first: t.Tensor, second: t.Tensor):
     if first.ndim == 1 and second.ndim == 1:
         data = t.stack((first, second), dim=1)
         for i in range(data.shape[1]):
@@ -258,9 +259,35 @@ def __spearman_metric(first, second):
     return corr
 
 
-def __dot_metric(first, second):
-    dot_prod = t.matmul(first.permute(*t.arange(first.ndim - 1, -1, -1)), second)
-    return dot_prod.float()
+def __dot_metric(first: t.Tensor, second: t.Tensor):
+    return t.matmul(
+        first.float().permute(*tuple(t.arange(first.ndim - 1, -1, -1))), second.float()
+    )
+
+
+@t.jit.script
+def __biweight_midcorrelation(first: t.Tensor, second: t.Tensor):
+    first_centered = first - t.median(first)
+    second_centered = second - t.median(second)
+    first_mad = t.median(t.abs(first_centered))
+    second_mad = t.median(t.abs(second_centered))
+
+    u_first = t.div(first_centered, t.mul(first_mad, 9))
+    u_second = t.div(second_centered, t.mul(second_mad, 9))
+    w_first = t.mul(
+        t.pow(t.neg(t.sub(t.pow(u_first, 2), 1)), 2), t.lt(t.abs(u_first), 1.0)
+    )
+    w_second = t.mul(
+        t.pow(t.neg(t.sub(t.pow(u_second, 2), 1)), 2), t.lt(t.abs(u_second), 1.0)
+    )
+
+    numerator = t.sum(w_first * w_second * first_centered * second_centered)
+    denominator = t.sqrt(
+        t.sum(w_first * w_second * t.pow(first_centered, 2))
+        * t.sum(w_first * w_second * t.pow(second_centered, 2))
+    )
+
+    return t.div(numerator, denominator)
 
 
 # ## ISNs computation for SNP array
