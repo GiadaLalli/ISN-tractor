@@ -128,6 +128,54 @@ def test_dense_500_3000_cpu(benchmark):
 
 
 @pytest.mark.benchmark_cpu_dense
+def test_dense_1000_1000_cpu(benchmark):
+    data = continuous(1000, 1000)
+    benchmark(compute_dense_isn, data)
+
+
+@pytest.mark.benchmark_cpu_dense
+def test_dense_1000_2000_cpu(benchmark):
+    data = continuous(1000, 2000)
+    benchmark(compute_dense_isn, data)
+
+
+@pytest.mark.benchmark_cpu_dense
+def test_dense_1000_3000_cpu(benchmark):
+    data = continuous(1000, 3000)
+    benchmark(compute_dense_isn, data)
+
+
+@pytest.mark.benchmark_cpu_dense
+def test_dense_2000_1000_cpu(benchmark):
+    data = continuous(2000, 1000)
+    benchmark(compute_dense_isn, data)
+
+
+@pytest.mark.benchmark_cpu_dense
+def test_dense_2000_2000_cpu(benchmark):
+    data = continuous(2000, 2000)
+    benchmark(compute_dense_isn, data)
+
+
+@pytest.mark.benchmark_cpu_dense
+def test_dense_2000_3000_cpu(benchmark):
+    data = continuous(2000, 3000)
+    benchmark(compute_dense_isn, data)
+
+
+@pytest.mark.benchmark_cpu_dense
+def test_dense_2000_5000_cpu(benchmark):
+    data = continuous(2000, 5000)
+    benchmark(compute_dense_isn, data)
+
+
+@pytest.mark.benchmark_cpu_dense
+def test_dense_2000_10000_cpu(benchmark):
+    data = continuous(2000, 10000)
+    benchmark(compute_dense_isn, data)
+
+
+@pytest.mark.benchmark_cpu_dense
 def test_dense_offline_200_1000_cpu(benchmark):
     data = continuous(200, 1000)
     benchmark(compute_dense_isn_offline, data)
@@ -160,6 +208,54 @@ def test_dense_offline_500_2000_cpu(benchmark):
 @pytest.mark.benchmark_cpu_dense
 def test_dense_offline_500_3000_cpu(benchmark):
     data = continuous(500, 3000)
+    benchmark(compute_dense_isn_offline, data)
+
+
+@pytest.mark.benchmark_cpu_dense
+def test_dense_offline_1000_1000_cpu(benchmark):
+    data = continuous(1000, 1000)
+    benchmark(compute_dense_isn_offline, data)
+
+
+@pytest.mark.benchmark_cpu_dense
+def test_dense_offline_1000_2000_cpu(benchmark):
+    data = continuous(1000, 2000)
+    benchmark(compute_dense_isn_offline, data)
+
+
+@pytest.mark.benchmark_cpu_dense
+def test_dense_offline_1000_3000_cpu(benchmark):
+    data = continuous(1000, 3000)
+    benchmark(compute_dense_isn_offline, data)
+
+
+@pytest.mark.benchmark_cpu_dense
+def test_dense_offline_2000_1000_cpu(benchmark):
+    data = continuous(2000, 1000)
+    benchmark(compute_dense_isn_offline, data)
+
+
+@pytest.mark.benchmark_cpu_dense
+def test_dense_offline_2000_2000_cpu(benchmark):
+    data = continuous(2000, 2000)
+    benchmark(compute_dense_isn_offline, data)
+
+
+@pytest.mark.benchmark_cpu_dense
+def test_dense_offline_2000_3000_cpu(benchmark):
+    data = continuous(2000, 3000)
+    benchmark(compute_dense_isn_offline, data)
+
+
+@pytest.mark.benchmark_cpu_dense
+def test_dense_offline_2000_5000_cpu(benchmark):
+    data = continuous(2000, 5000)
+    benchmark(compute_dense_isn_offline, data)
+
+
+@pytest.mark.benchmark_cpu_dense
+def test_dense_offline_2000_10000_cpu(benchmark):
+    data = continuous(2000, 10000)
     benchmark(compute_dense_isn_offline, data)
 
 
