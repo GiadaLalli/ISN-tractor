@@ -480,40 +480,51 @@ def test_dense_1000_10000_cuda(benchmark):
     device = t.device("cuda")
     benchmark.pedantic(compute_dense_isn, args=(data, device), rounds=20, iterations=3)
 
+
 ###########
 @pytest.mark.benchmark_cuda
 def test_dense_offline_200_1000_cuda(benchmark):
     data = continuous(200, 1000)
     device = t.device("cuda")
-    benchmark.pedantic(compute_dense_isn_offline, args=(data, device), rounds=20, iterations=3)
+    benchmark.pedantic(
+        compute_dense_isn_offline, args=(data, device), rounds=20, iterations=3
+    )
 
 
 @pytest.mark.benchmark_cuda
 def test_dense_offline_200_2000_cuda(benchmark):
     data = continuous(200, 2000)
     device = t.device("cuda")
-    benchmark.pedantic(compute_dense_isn_offline, args=(data, device), rounds=20, iterations=3)
+    benchmark.pedantic(
+        compute_dense_isn_offline, args=(data, device), rounds=20, iterations=3
+    )
 
 
 @pytest.mark.benchmark_cuda
 def test_dense_offline_200_3000_cuda(benchmark):
     data = continuous(200, 3000)
     device = t.device("cuda")
-    benchmark.pedantic(compute_dense_isn_offline, args=(data, device), rounds=20, iterations=3)
+    benchmark.pedantic(
+        compute_dense_isn_offline, args=(data, device), rounds=20, iterations=3
+    )
 
 
 @pytest.mark.benchmark_cuda
 def test_dense_offline_500_1000_cuda(benchmark):
     data = continuous(500, 1000)
     device = t.device("cuda")
-    benchmark.pedantic(compute_dense_isn_offline, args=(data, device), rounds=20, iterations=3)
+    benchmark.pedantic(
+        compute_dense_isn_offline, args=(data, device), rounds=20, iterations=3
+    )
 
 
 @pytest.mark.benchmark_cuda
 def test_dense_offline_500_2000_cuda(benchmark):
     data = continuous(500, 2000)
     device = t.device("cuda")
-    benchmark.pedantic(compute_dense_isn_offline, args=(data, device), rounds=20, iterations=3)
+    benchmark.pedantic(
+        compute_dense_isn_offline, args=(data, device), rounds=20, iterations=3
+    )
 
 
 @pytest.mark.benchmark_cuda
@@ -527,53 +538,69 @@ def test_dense_offline_500_3000_cuda(benchmark):
 def test_dense_offline_1000_1000_cuda(benchmark):
     data = continuous(1000, 1000)
     device = t.device("cuda")
-    benchmark.pedantic(compute_dense_isn_offline, args=(data, device), rounds=20, iterations=3)
+    benchmark.pedantic(
+        compute_dense_isn_offline, args=(data, device), rounds=20, iterations=3
+    )
 
 
 @pytest.mark.benchmark_cuda
 def test_dense_offline_1000_2000_cuda(benchmark):
     data = continuous(1000, 2000)
     device = t.device("cuda")
-    benchmark.pedantic(compute_dense_isn_offline, args=(data, device), rounds=20, iterations=3)
+    benchmark.pedantic(
+        compute_dense_isn_offline, args=(data, device), rounds=20, iterations=3
+    )
 
 
 @pytest.mark.benchmark_cuda
 def test_dense_offline_1000_3000_cuda(benchmark):
     data = continuous(1000, 3000)
     device = t.device("cuda")
-    benchmark.pedantic(compute_dense_isn_offline, args=(data, device), rounds=20, iterations=3)
+    benchmark.pedantic(
+        compute_dense_isn_offline, args=(data, device), rounds=20, iterations=3
+    )
 
 
 @pytest.mark.benchmark_cuda
 def test_dense_offline_2000_1000_cuda(benchmark):
     data = continuous(2000, 1000)
     device = t.device("cuda")
-    benchmark.pedantic(compute_dense_isn_offline, args=(data, device), rounds=20, iterations=3)
+    benchmark.pedantic(
+        compute_dense_isn_offline, args=(data, device), rounds=20, iterations=3
+    )
 
 
 @pytest.mark.benchmark_cuda
 def test_dense_offline_2000_2000_cuda(benchmark):
     data = continuous(2000, 2000)
     device = t.device("cuda")
-    benchmark.pedantic(compute_dense_isn_offline, args=(data, device), rounds=20, iterations=3)
+    benchmark.pedantic(
+        compute_dense_isn_offline, args=(data, device), rounds=20, iterations=3
+    )
 
 
 @pytest.mark.benchmark_cuda
 def test_dense_offline_2000_3000_cuda(benchmark):
     data = continuous(2000, 3000)
     device = t.device("cuda")
-    benchmark.pedantic(compute_dense_isn_offline, args=(data, device), rounds=20, iterations=3)
+    benchmark.pedantic(
+        compute_dense_isn_offline, args=(data, device), rounds=20, iterations=3
+    )
 
 
 @pytest.mark.benchmark_cuda
 def test_dense_offline_2000_5000_cuda(benchmark):
     data = continuous(2000, 5000)
     device = t.device("cuda")
-    benchmark.pedantic(compute_dense_isn_offline, args=(data, device), rounds=20, iterations=3)
+    benchmark.pedantic(
+        compute_dense_isn_offline, args=(data, device), rounds=20, iterations=3
+    )
 
 
 @pytest.mark.benchmark_cuda
 def test_dense_offline_2000_10000_cuda(benchmark):
     data = continuous(2000, 10000)
     device = t.device("cuda")
-    benchmark.pedantic(compute_dense_isn_offline, args=(data, device), rounds=20, iterations=3)
+    benchmark.pedantic(
+        compute_dense_isn_offline, args=(data, device), rounds=20, iterations=3
+    )
