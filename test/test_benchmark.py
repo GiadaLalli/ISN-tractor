@@ -2,41 +2,11 @@ import pytest
 import pandas as pd
 import torch as t
 import numpy as np
-from pandas import DataFrame
-from numpy.random import uniform
 
 from isn_tractor.ibisn import dense_isn, sparse_isn
+
+from benchmark.benchmark import continuous, interactions
 from benchmark.dense_isn_offline import dense_isn_offline
-
-"""
-def discrete(n_individuals: int, m_genes: int) -> DataFrame:
-    return DataFrame(
-        np.random.randint(0, 3, size=(n_individuals, m_genes)),
-        index=["sample_" + str(i) for i in range(n_individuals)],
-        columns=["unmapped_feature_" + str(i) for i in range(m_genes)],
-    )"""
-
-
-def interactions(n_rows):
-    features = [f"mapped_feature_{i}" for i in range(n_rows)]
-    interact = []
-    for i in range(len(features)):
-        other_features = features[:i] + features[i + 1 :]
-        n_interact = np.random.randint(1, n_rows)
-        interact_features = np.random.choice(
-            other_features, size=n_interact, replace=False
-        )
-        for j in range(n_interact):
-            interact.append((features[i], interact_features[j]))
-    interact_df = pd.DataFrame(interact, columns=["feature_1", "feature_2"])
-
-    # Remove 30% of random rows
-    interact_df = interact_df.sample(frac=0.7, random_state=42)
-
-    # Sort by index
-    interact_df = interact_df.sort_index()
-
-    return interact_df
 
 
 def mapped_info(df):
@@ -71,14 +41,6 @@ def unmapped_info(df):
     # chromosome = sorted([(i % 23) + 1 for i in range(rows)])
     chromosome = 1
     return pd.DataFrame({"chr": chromosome, "location": location}, index=df.columns)
-
-
-def continuous(n_individuals: int, m_genes: int) -> DataFrame:
-    return DataFrame(
-        uniform(-100, 100, size=(n_individuals, m_genes)),
-        index=["sample_" + str(i) for i in range(n_individuals)],
-        columns=["mapped_feature_" + str(i) for i in range(m_genes)],
-    )
 
 
 def compute_dense_isn(data, device=None):
@@ -361,7 +323,7 @@ def compute_sparse_isn(
     data,
     interact_unmapped,
     interact_mapped,
-    metric="incremental_pearson",
+    metric,
     pool=None,
     device=None,
 ):
@@ -377,59 +339,108 @@ def compute_sparse_isn(
 
 
 @pytest.mark.benchmark_cpu_sparse
-def test_sparse_200_500_cpu(benchmark):
+def test_sparse_200_500_biweight_midcorrelation_cpu(benchmark):
     data = continuous(200, 500)
     interact = interactions(500)
-    benchmark(compute_sparse_isn, data, None, interact)
+    benchmark(compute_sparse_isn, data, None, interact, "biweight_midcorrelation")
+
+
+@pytest.mark.benchmark_cpu_sparse
+def test_sparse_200_1000_biweight_midcorrelation_cpu(benchmark):
+    data = continuous(200, 1000)
+    interact = interactions(500)
+    benchmark(compute_sparse_isn, data, None, interact, "biweight_midcorrelation")
+
+
+@pytest.mark.benchmark_cpu_sparse
+def test_sparse_500_500_biweight_midcorrelation_cpu(benchmark):
+    data = continuous(500, 500)
+    interact = interactions(500)
+    benchmark(compute_sparse_isn, data, None, interact, "biweight_midcorrelation")
+
+
+@pytest.mark.benchmark_cpu_sparse
+def test_sparse_500_1000_biweight_midcorrelation_cpu(benchmark):
+    data = continuous(500, 1000)
+    interact = interactions(500)
+    benchmark(compute_sparse_isn, data, None, interact, "biweight_midcorrelation")
+
+
+@pytest.mark.benchmark_cpu_sparse
+def test_sparse_200_500_pearson_cpu(benchmark):
+    data = continuous(200, 500)
+    interact = interactions(500)
+    benchmark(compute_sparse_isn, data, None, interact, "pearson")
+
+
+@pytest.mark.benchmark_cpu_sparse
+def test_sparse_200_1000_pearson_cpu(benchmark):
+    data = continuous(200, 1000)
+    interact = interactions(500)
+    benchmark(compute_sparse_isn, data, None, interact, "pearson")
+
+
+@pytest.mark.benchmark_cpu_sparse
+def test_sparse_500_500_pearson_cpu(benchmark):
+    data = continuous(500, 500)
+    interact = interactions(500)
+    benchmark(compute_sparse_isn, data, None, interact, "pearson")
+
+
+@pytest.mark.benchmark_cpu_sparse
+def test_sparse_500_1000_pearson_cpu(benchmark):
+    data = continuous(500, 1000)
+    interact = interactions(500)
+    benchmark(compute_sparse_isn, data, None, interact, "pearson")
 
 
 @pytest.mark.benchmark_cuda
-def test_sparse_200_10000_cuda(benchmark):
+def test_sparse_200_10000_pearson_cuda(benchmark):
     data = continuous(200, 10000)
     i_m = interactions(5000)
     device = t.device("cuda")
     benchmark.pedantic(
         compute_sparse_isn,
-        args=(data, None, i_m, "incremental_pearson", None, device),
+        args=(data, None, i_m, "pearson", None, device),
         rounds=20,
         iterations=3,
     )
 
 
 @pytest.mark.benchmark_cuda
-def test_sparse_500_10000_cuda(benchmark):
+def test_sparse_500_10000_pearson_cuda(benchmark):
     data = continuous(500, 10000)
     i_m = interactions(5200)
     device = t.device("cuda")
     benchmark.pedantic(
         compute_sparse_isn,
-        args=(data, None, i_m, "incremental_pearson", None, device),
+        args=(data, None, i_m, "pearson", None, device),
         rounds=20,
         iterations=3,
     )
 
 
 @pytest.mark.benchmark_cuda
-def test_sparse_1000_10000_cuda(benchmark):
+def test_sparse_1000_10000_pearson_cuda(benchmark):
     data = continuous(1000, 10000)
     i_m = interactions(7000)
     device = t.device("cuda")
     benchmark.pedantic(
         compute_sparse_isn,
-        args=(data, None, i_m, "incremental_pearson", None, device),
+        args=(data, None, i_m, "pearson", None, device),
         rounds=20,
         iterations=3,
     )
 
 
 @pytest.mark.benchmark_cuda
-def test_sparse_2000_10000_cuda(benchmark):
+def test_sparse_2000_10000_pearson_cuda(benchmark):
     data = continuous(2000, 10000)
     i_m = interactions(8000)
     device = t.device("cuda")
     benchmark.pedantic(
         compute_sparse_isn,
-        args=(data, None, i_m, "incremental_pearson", None, device),
+        args=(data, None, i_m, "pearson", None, device),
         rounds=20,
         iterations=3,
     )

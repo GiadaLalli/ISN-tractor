@@ -5,27 +5,28 @@ Copyright 2023 Giada Lalli
 """
 
 from typing import Union, Literal, Tuple, List, Any, Callable, Optional
+from collections.abc import Generator
+from functools import lru_cache
+
 import pandas as pd
 import numpy as np
-from numpy._typing import _ArrayLikeFloat_co, _FloatLike_co
+
+# from numpy._typing import _ArrayLikeFloat_co, _FloatLike_co
 import torch as t
 
-MetricFn = Callable[
-    [t.Tensor, t.Tensor],
-    Union[_ArrayLikeFloat_co, _FloatLike_co],
+PoolingFn = Callable[
+    [t.Tensor],
+    t.Tensor,
 ]
 
-PoolingFn = Callable[
-    [Union[_ArrayLikeFloat_co, _FloatLike_co]],
-    _FloatLike_co,
-]
+MetricFn = Callable[[t.Tensor, t.Tensor], t.Tensor]
 
 Metric = Union[
     Literal["pearson"],
     Literal["incremental_pearson"],
     Literal["spearman"],
     Literal["dot"],
-    Literal["biweight_midcorrelation"],
+    Literal["biweight"],
     MetricFn,
 ]
 
@@ -53,9 +54,11 @@ def preprocess_gtf(gtf: pd.DataFrame) -> pd.DataFrame:
     gtf.drop(gtf.columns[cols], axis=1, inplace=True)
     gene_info = gtf[gtf[2].str.contains("gene")]
 
-    gene_info[["gene", "ENSEMBL_ID"]] = gtf["ENSEMBL_ID"].str.split(" ", 1, expand=True)
-    gene_info[["ENSEMBL_ID", "X"]] = gtf["ENSEMBL_ID"].str.split('"', 1, expand=True)
-    gene_info[["ENSEMBL_ID", "X"]] = gene_info["X"].str.split('"', 1, expand=True)
+    gene_info[["gene", "ENSEMBL_ID"]] = gtf["ENSEMBL_ID"].str.split(
+        " ", n=1, expand=True
+    )
+    gene_info[["ENSEMBL_ID", "X"]] = gtf["ENSEMBL_ID"].str.split('"', n=1, expand=True)
+    gene_info[["ENSEMBL_ID", "X"]] = gene_info["X"].str.split('"', n=1, expand=True)
 
     cols = [1, 2, 5, 6, 7, 9, 10, 11, 12]
     gene_info.drop(gene_info.columns[cols], axis=1, inplace=True)
@@ -226,68 +229,132 @@ def map_interaction(
 # ## Metrics for **unmapped discrete data
 
 
-def __pearson_metric(first: t.Tensor, second: t.Tensor) -> t.Tensor:
-    if first.dim() == 1 and second.dim() == 1:
-        combined = t.stack([first, second], dim=1)
-        return t.corrcoef(combined.T)[0, 1]
+def __pearson_metric(pool: PoolingFn) -> MetricFn:
+    @lru_cache(10240)
+    def metric(first: t.Tensor, second: t.Tensor) -> t.Tensor:
+        if first.dim() == 1 and second.dim() == 1:
+            combined = t.stack([first, second], dim=1)
+            return pool(t.corrcoef(combined.T)[0, 1])
 
-    combined = t.cat([first, second], dim=1)
-    return t.corrcoef(combined.T)[: first.shape[1], first.shape[1]]
+        combined = t.cat([first, second], dim=1)
+        return pool(t.corrcoef(combined.T)[: first.shape[1], first.shape[1]])
+
+    return metric
 
 
-def __spearman_metric(first: t.Tensor, second: t.Tensor):
-    if first.ndim == 1 and second.ndim == 1:
-        data = t.stack((first, second), dim=1)
-        for i in range(data.shape[1]):
-            _, inv, counts = t.unique(
-                data[:, i], return_inverse=True, return_counts=True
+def __spearman_metric(pool: PoolingFn) -> MetricFn:
+    @lru_cache(10240)
+    def metric(first: t.Tensor, second: t.Tensor) -> t.Tensor:
+        if first.ndim == 1 and second.ndim == 1:
+            data = t.stack((first, second), dim=1)
+            for i in range(data.shape[1]):
+                _, inv, counts = t.unique(
+                    data[:, i], return_inverse=True, return_counts=True
+                )
+                csum = t.zeros_like(counts)
+                csum[1:] = counts[:-1].cumsum(dim=-1)
+                data[:, i] = csum[inv]
+            corr = t.corrcoef(data.T)[0, 1]
+        else:
+            data = t.cat((first, second), dim=1)
+            for i in range(data.shape[1]):
+                _, inv, counts = t.unique(
+                    data[:, i], return_inverse=True, return_counts=True
+                )
+                csum = t.zeros_like(counts)
+                csum[1:] = counts[:-1].cumsum(dim=-1)
+                data[:, i] = csum[inv]
+            corr = t.corrcoef(data.T)[: first.shape[1], first.shape[1] :]
+        return pool(corr)
+
+    return metric
+
+
+def __dot_metric(pool: PoolingFn) -> MetricFn:
+    @lru_cache(10240)
+    def metric(first: t.Tensor, second: t.Tensor) -> t.Tensor:
+        return pool(
+            t.matmul(
+                first.float().permute(*tuple(t.arange(first.ndim - 1, -1, -1))),
+                second.float(),
             )
-            csum = t.zeros_like(counts)
-            csum[1:] = counts[:-1].cumsum(dim=-1)
-            data[:, i] = csum[inv]
-        corr = t.corrcoef(data.T)[0, 1]
-    else:
-        data = t.cat((first, second), dim=1)
-        for i in range(data.shape[1]):
-            _, inv, counts = t.unique(
-                data[:, i], return_inverse=True, return_counts=True
-            )
-            csum = t.zeros_like(counts)
-            csum[1:] = counts[:-1].cumsum(dim=-1)
-            data[:, i] = csum[inv]
-        corr = t.corrcoef(data.T)[: first.shape[1], first.shape[1] :]
-    return corr
+        )
+
+    return metric
 
 
-def __dot_metric(first: t.Tensor, second: t.Tensor):
-    return t.matmul(
-        first.float().permute(*tuple(t.arange(first.ndim - 1, -1, -1))), second.float()
-    )
+def __biweight_midcorrelation(pool: PoolingFn) -> MetricFn:
+    @lru_cache(10240)
+    def metric(first: t.Tensor, second: t.Tensor) -> t.Tensor:
+        first_centered = first - t.median(first)
+        first_mad = t.median(t.abs(first_centered))
+        u_first = first_centered / (first_mad * 9.0)
+        w_first = t.pow(1.0 - t.pow(u_first, 2.0), 2.0) * (t.abs(u_first) < 1.0)
+
+        second_centered = second - t.median(second)
+        second_mad = t.median(t.abs(second_centered))
+        u_second = second_centered / (second_mad * 9.0)
+        w_second = t.pow(1.0 - t.pow(u_second, 2.0), 2.0) * (t.abs(u_second) < 1.0)
+
+        w_first_x_w_second = w_first * w_second
+
+        numerator = t.sum(w_first_x_w_second * first_centered * second_centered)
+        denominator = t.sqrt(
+            t.sum(w_first_x_w_second * t.pow(first_centered, 2))
+            * t.sum(w_first_x_w_second * t.pow(second_centered, 2))
+        )
+
+        return pool(numerator / denominator)
+
+    return metric
 
 
+@lru_cache(10240)
 @t.jit.script
-def __biweight_midcorrelation(first: t.Tensor, second: t.Tensor):
+def __biweight_midcorrelation_max(first: t.Tensor, second: t.Tensor) -> t.Tensor:
     first_centered = first - t.median(first)
-    second_centered = second - t.median(second)
     first_mad = t.median(t.abs(first_centered))
+    u_first = first_centered / (first_mad * 9.0)
+    w_first = t.pow(1.0 - t.pow(u_first, 2.0), 2.0) * (t.abs(u_first) < 1.0)
+
+    second_centered = second - t.median(second)
     second_mad = t.median(t.abs(second_centered))
+    u_second = second_centered / (second_mad * 9.0)
+    w_second = t.pow(1.0 - t.pow(u_second, 2.0), 2.0) * (t.abs(u_second) < 1.0)
 
-    u_first = t.div(first_centered, t.mul(first_mad, 9))
-    u_second = t.div(second_centered, t.mul(second_mad, 9))
-    w_first = t.mul(
-        t.pow(t.neg(t.sub(t.pow(u_first, 2), 1)), 2), t.lt(t.abs(u_first), 1.0)
-    )
-    w_second = t.mul(
-        t.pow(t.neg(t.sub(t.pow(u_second, 2), 1)), 2), t.lt(t.abs(u_second), 1.0)
-    )
+    w_first_x_w_second = w_first * w_second
 
-    numerator = t.sum(w_first * w_second * first_centered * second_centered)
+    numerator = t.sum(w_first_x_w_second * first_centered * second_centered)
     denominator = t.sqrt(
-        t.sum(w_first * w_second * t.pow(first_centered, 2))
-        * t.sum(w_first * w_second * t.pow(second_centered, 2))
+        t.sum(w_first_x_w_second * t.pow(first_centered, 2))
+        * t.sum(w_first_x_w_second * t.pow(second_centered, 2))
     )
 
-    return t.div(numerator, denominator)
+    return t.max(numerator / denominator)
+
+
+@lru_cache(10240)
+@t.jit.script
+def __biweight_midcorrelation_avg(first: t.Tensor, second: t.Tensor) -> t.Tensor:
+    first_centered = first - t.median(first)
+    first_mad = t.median(t.abs(first_centered))
+    u_first = first_centered / (first_mad * 9.0)
+    w_first = t.pow(1.0 - t.pow(u_first, 2.0), 2.0) * (t.abs(u_first) < 1.0)
+
+    second_centered = second - t.median(second)
+    second_mad = t.median(t.abs(second_centered))
+    u_second = second_centered / (second_mad * 9.0)
+    w_second = t.pow(1.0 - t.pow(u_second, 2.0), 2.0) * (t.abs(u_second) < 1.0)
+
+    w_first_x_w_second = w_first * w_second
+
+    numerator = t.sum(w_first_x_w_second * first_centered * second_centered)
+    denominator = t.sqrt(
+        t.sum(w_first_x_w_second * t.pow(first_centered, 2))
+        * t.sum(w_first_x_w_second * t.pow(second_centered, 2))
+    )
+
+    return t.mean(numerator / denominator)
 
 
 # ## ISNs computation for SNP array
@@ -295,24 +362,25 @@ def __biweight_midcorrelation(first: t.Tensor, second: t.Tensor):
 
 def __isn_edge(
     metric: MetricFn,
-    pool: PoolingFn,
 ):
     """
     Internal
     """
 
-    def isn_edge_implementation(first: t.Tensor, second: t.Tensor):
+    def isn_edge_implementation(first: t.Tensor, second: t.Tensor) -> t.Tensor:
         rows = first.shape[0]
-        glob = pool(metric(first, second))
+        glob = metric(first, second)
         result = []
 
-        for indx in range(first.shape[0]):
+        for indx in range(rows):
             loo_1 = t.cat((first[:indx], first[indx + 1 :]))
             loo_2 = t.cat((second[:indx], second[indx + 1 :]))
-            avg = pool(metric(loo_1, loo_2))
-            result.append(rows * (glob - avg) + avg)  # type: ignore[call-overload,operator]
+            pooled = metric(loo_1, loo_2)
+            result.append(rows * (glob - pooled) + pooled)  # type: ignore[call-overload,operator]
 
-        return np.array(result, dtype=np.float64)
+        return t.stack(result)
+
+    # np.array(result, dtype=np.float64)
 
     return isn_edge_implementation
 
@@ -322,12 +390,11 @@ def __make_array(*xs):
 
 
 def __make_edge_fn(
-    data,
+    data: pd.DataFrame,
     metric_fn: MetricFn,
-    pool_fn: PoolingFn,
     device: Optional[t.device] = None,
 ):
-    edge = __isn_edge(metric_fn, pool_fn)
+    edge = __isn_edge(metric_fn)
 
     def make_edge(assoc_1, assoc_2):
         element_one = __make_array(assoc_1)
@@ -353,19 +420,19 @@ def __make_edge_fn(
     return make_edge
 
 
-def __identity(value: _FloatLike_co) -> _FloatLike_co:
+def __identity(value: t.Tensor) -> t.Tensor:
     return value
 
 
 # pylint: disable=too-many-arguments
 def sparse_isn(
-    data,
-    interact_unmapped,
-    interact_mapped,
+    data: pd.DataFrame,
+    interact_unmapped: Optional[List],
+    interact_mapped: pd.DataFrame,
     metric: Metric,
     pool: Optional[Pooling] = None,
     device: Optional[t.device] = None,
-):
+) -> Generator[t.Tensor, None, None]:
     """
     Network computation guided by weighted edges given interaction relevance.
 
@@ -378,22 +445,40 @@ def sparse_isn(
         interact = interact_mapped.values
     assert np.all(snp.isin(data.columns) for snp in interact)  # type: ignore[call-overload]
     if metric == "incremental_pearson" and interact_unmapped is None:
-        return dense_isn(data, device)
+        return dense_isn(data, device)  # type: ignore[return-value]
 
-    if isinstance(metric, str):
+    if isinstance(metric, str) and isinstance(pool, str):
         if (
             metric_fn := {
-                "pearson": __pearson_metric,
-                "spearman": __spearman_metric,
-                "dot": __dot_metric,
+                ("pearson", "max"): __pearson_metric(t.max),
+                ("pearson", "avg"): __pearson_metric(t.mean),
+                ("pearson", "average"): __pearson_metric(t.mean),
+                ("spearman", "max"): __spearman_metric(t.max),
+                ("spearman", "avg"): __spearman_metric(t.mean),
+                ("spearman", "average"): __spearman_metric(t.mean),
+                ("dot", "max"): __dot_metric(t.max),
+                ("dot", "avg"): __dot_metric(t.mean),
+                ("dot", "average"): __dot_metric(t.mean),
+                ("biweight", "max"): __biweight_midcorrelation_max,
+                ("biweight", "avg"): __biweight_midcorrelation_avg,
+                ("biweight", "average"): __biweight_midcorrelation_avg,
+            }.get((metric, pool))
+        ) is None:
+            raise ValueError(
+                f'"{metric}" / "{pool}" is not a valid metric / pool combination'
+            )
+    elif isinstance(metric, str):
+
+        pooling_fn: PoolingFn = __identity if pool is None else pool  # type: ignore[assignment]
+        if (
+            metric_fn := {
+                "pearson": __pearson_metric(pooling_fn),
+                "spearman": __spearman_metric(pooling_fn),
+                "dot": __dot_metric(pooling_fn),
+                "biweight": __biweight_midcorrelation(pooling_fn),
             }.get(metric)
         ) is None:
             raise ValueError(f'"{metric}" is not a valid metric')
-    else:
-        metric_fn = metric
-
-    if pool is None:
-        pooling_fn: PoolingFn = __identity  # type: ignore[assignment]
     elif isinstance(pool, str):
         if (
             pooling_fn := {  # type: ignore[assignment]
@@ -403,24 +488,29 @@ def sparse_isn(
             }.get(pool)
         ) is None:
             raise ValueError(f'"{pool}" is not a valid pooling method')
+
+        def metric_fn(first, second):
+            return pooling_fn(metric(first, second))
+
     else:
-        pooling_fn = pool
+
+        def metric_fn(first, second):
+            return pool(metric(first, second))
 
     assert metric_fn is not None
-    assert pooling_fn is not None
 
-    isn_edge = __make_edge_fn(data, metric_fn, pooling_fn, device=device)
+    isn_edge = __make_edge_fn(data, metric_fn, device=device)  # type: ignore[arg-type]
 
-    return pd.DataFrame(
-        np.column_stack([isn_edge(*assoc) for assoc in interact]),
-        columns=[a + "_" + b for a, b in interact_mapped.values],
-    )
+    for assoc in interact:
+        yield isn_edge(*assoc)
+
+    return None
 
 
 def dense_isn(
     data: pd.DataFrame,
     device: Optional[t.device] = None,
-):
+) -> Generator[t.Tensor, None, None]:
     """
     Network computation based on the Lioness algorithm
     """
