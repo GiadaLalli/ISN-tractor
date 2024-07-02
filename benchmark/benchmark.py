@@ -2,8 +2,6 @@ import pandas as pd
 import numpy as np
 from numpy.random import randint, uniform
 
-import pyperf
-
 
 def discrete(n_individuals: int, m_snps: int) -> pd.DataFrame:
     return pd.DataFrame(
@@ -44,6 +42,8 @@ def interactions(n_rows):
 
 
 if __name__ == "__main__":
+    import pyperf
+
     runner = pyperf.Runner()
 
     runner.timeit(
