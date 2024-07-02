@@ -338,32 +338,39 @@ def compute_sparse_isn(
         del isn
 
 
+@pytest.mark.performance_regression_test
+def test_performance_regression(benchmark):
+    data = continuous(10, 15)
+    interact = interactions(15)
+    benchmark(compute_sparse_isn, data, None, interact, "biweight", "max")
+
+
 @pytest.mark.benchmark_cpu_sparse
 def test_sparse_200_500_biweight_midcorrelation_cpu(benchmark):
     data = continuous(200, 500)
     interact = interactions(500)
-    benchmark(compute_sparse_isn, data, None, interact, "biweight_midcorrelation")
+    benchmark(compute_sparse_isn, data, None, interact, "biweight")
 
 
 @pytest.mark.benchmark_cpu_sparse
 def test_sparse_200_1000_biweight_midcorrelation_cpu(benchmark):
     data = continuous(200, 1000)
-    interact = interactions(500)
-    benchmark(compute_sparse_isn, data, None, interact, "biweight_midcorrelation")
+    interact = interactions(1000)
+    benchmark(compute_sparse_isn, data, None, interact, "biweight")
 
 
 @pytest.mark.benchmark_cpu_sparse
 def test_sparse_500_500_biweight_midcorrelation_cpu(benchmark):
     data = continuous(500, 500)
     interact = interactions(500)
-    benchmark(compute_sparse_isn, data, None, interact, "biweight_midcorrelation")
+    benchmark(compute_sparse_isn, data, None, interact, "biweight")
 
 
 @pytest.mark.benchmark_cpu_sparse
 def test_sparse_500_1000_biweight_midcorrelation_cpu(benchmark):
     data = continuous(500, 1000)
-    interact = interactions(500)
-    benchmark(compute_sparse_isn, data, None, interact, "biweight_midcorrelation")
+    interact = interactions(1000)
+    benchmark(compute_sparse_isn, data, None, interact, "biweight")
 
 
 @pytest.mark.benchmark_cpu_sparse
@@ -376,7 +383,7 @@ def test_sparse_200_500_pearson_cpu(benchmark):
 @pytest.mark.benchmark_cpu_sparse
 def test_sparse_200_1000_pearson_cpu(benchmark):
     data = continuous(200, 1000)
-    interact = interactions(500)
+    interact = interactions(1000)
     benchmark(compute_sparse_isn, data, None, interact, "pearson")
 
 
@@ -390,14 +397,14 @@ def test_sparse_500_500_pearson_cpu(benchmark):
 @pytest.mark.benchmark_cpu_sparse
 def test_sparse_500_1000_pearson_cpu(benchmark):
     data = continuous(500, 1000)
-    interact = interactions(500)
+    interact = interactions(1000)
     benchmark(compute_sparse_isn, data, None, interact, "pearson")
 
 
 @pytest.mark.benchmark_cuda
 def test_sparse_200_10000_pearson_cuda(benchmark):
     data = continuous(200, 10000)
-    i_m = interactions(5000)
+    i_m = interactions(10000)
     device = t.device("cuda")
     benchmark.pedantic(
         compute_sparse_isn,
@@ -410,7 +417,7 @@ def test_sparse_200_10000_pearson_cuda(benchmark):
 @pytest.mark.benchmark_cuda
 def test_sparse_500_10000_pearson_cuda(benchmark):
     data = continuous(500, 10000)
-    i_m = interactions(5200)
+    i_m = interactions(10000)
     device = t.device("cuda")
     benchmark.pedantic(
         compute_sparse_isn,

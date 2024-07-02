@@ -56,7 +56,7 @@ jobs:
         run: poetry install
 
       - name: "Run benchmark"
-        run: poetry run pytest test/test_benchmark.py -k 200_500 --benchmark-json output.json
+        run: poetry run pytest test/test_benchmark.py -m 'performance_regression_test' --benchmark-json output.json
 
       - name: Download previous benchmark data
         uses: actions/cache@v4
