@@ -27,7 +27,7 @@ jobs:
         run: poetry run pylint isn_tractor/
 
       - name: Code formatting
-        run: poetry run black --check .
+        run: poetry run black --check --diff .
 
       - name: Type checking
         run: poetry run mypy isn_tractor/
