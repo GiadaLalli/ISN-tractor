@@ -33,7 +33,7 @@ jobs:
         run: poetry run mypy isn_tractor/
 
       - name: Tests
-        run: poetry run pytest -m 'not benchmark_cuda and not benchmark_cpu_dense and not benchmark_cpu_sparse' --junitxml=report.xml --cov=isn_tractor/ --cov-fail-under=45
+        run: poetry run pytest -m 'not benchmark_cuda and not benchmark_cpu_dense and not benchmark_cpu_sparse and not performance_regression_test' --junitxml=report.xml --cov=isn_tractor/ --cov-fail-under=45
 
       - name: Test report
         uses: dorny/test-reporter@v1
