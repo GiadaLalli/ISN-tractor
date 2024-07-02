@@ -46,12 +46,13 @@ ignore_missing_imports = true
 
 
 [tool.pylint]
-generated-members = "t.tensor,t.matmul,t.arange,t.corrcoef,t.cat,t.argsort,t.zeros,t.device,t.square,t.from_numpy,t.mean,t.stack,t.max,t.sum,t.pow,t.sqrt,t.outer,t.flatten,t.float32,t.transpose,t.reshape"
+generated-members = "t.tensor,t.matmul,t.arange,t.corrcoef,t.cat,t.argsort,t.zeros,t.device,t.square,t.from_numpy,t.mean,t.stack,t.max,t.sum,t.pow,t.sqrt,t.outer,t.flatten,t.float32,t.transpose,t.reshape,t.median,t.abs,t.mul,t.lt,t.sub,t.neg"
 
 
 [tool.pytest.ini_options]
 markers = [
     "benchmark_cpu_dense: marks tests as CPU benchmarks for dense ISNs (select with '-m benchmark_cpu_dense')",
     "benchmark_cpu_sparse: marks tests as CPU benchmarks for sparse ISNs (select with '-m benchmark_cpu_sparse')",
-    "benchmark_cuda: marks tests as GPU benchmarks (select with '-m benchmark_cuda')"
+    "benchmark_cuda: marks tests as GPU benchmarks (select with '-m benchmark_cuda')",
+    "performance_regression_test: CI test for performance regressions"
 ]
