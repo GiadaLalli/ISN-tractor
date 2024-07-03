@@ -378,9 +378,7 @@ def __isn_edge(
             result.append(rows * (glob - pooled) + pooled)  # type: ignore[call-overload,operator]
 
         edge = t.stack(result)
-        return edge.view(*edge.shape[:2])
-
-    # np.array(result, dtype=np.float64)
+        return edge.flatten()
 
     return isn_edge_implementation
 
