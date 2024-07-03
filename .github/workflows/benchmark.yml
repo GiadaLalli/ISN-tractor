@@ -1,0 +1,37 @@
+# Do not run this workflow on pull request since this workflow has permission to modify contents.
+on:
+  push:
+    branches:
+      - master
+
+permissions:
+  # deployments permission to deploy GitHub pages website
+  deployments: write
+  # contents permission to update benchmark contents in gh-pages branch
+  contents: write
+
+jobs:
+  benchmark:
+    name: "Performance regression tests"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+      - uses: Gr1N/setup-poetry@v9
+
+      - name: "Install dependencise"
+        run: poetry install
+
+      - name: "Run benchmark"
+        run: poetry run pytest test/test_benchmark.py -k 200_500 --benchmark-json output.json
+
+      - name: Store benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: "ISN-Tractor Performance Regression Tests"
+          tool: "pytest"
+          output-file-path: "output.json"
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true

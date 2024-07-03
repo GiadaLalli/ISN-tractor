@@ -59,7 +59,7 @@ jobs:
         run: poetry run pytest test/test_benchmark.py -k 200_500 --benchmark-json output.json
 
       - name: Download previous benchmark data
-        uses: actions/cache@v1
+        uses: actions/cache@v4
         with:
           path: ./cache
           key: ${{ runner.os }}-benchmark
