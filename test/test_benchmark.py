@@ -338,11 +338,152 @@ def compute_sparse_isn(
         del isn
 
 
+@pytest.fixture(scope="session")
+def performance_test_data():
+    return (continuous(18, 20), interactions(18))
+
+
 @pytest.mark.performance_regression_test
-def test_performance_regression(benchmark):
-    data = continuous(10, 15)
-    interact = interactions(15)
-    benchmark(compute_sparse_isn, data, None, interact, "biweight", "max")
+def test_regression_biweight_max(benchmark, performance_test_data):
+    data, interact = performance_test_data
+    benchmark.pedantic(
+        compute_sparse_isn,
+        args=(data, None, interact, "biweight", "max"),
+        rounds=20,
+        iterations=5,
+    )
+
+
+@pytest.mark.performance_regression_test
+def test_regression_biweight_avg(benchmark, performance_test_data):
+    data, interact = performance_test_data
+    benchmark.pedantic(
+        compute_sparse_isn,
+        args=(data, None, interact, "biweight", "avg"),
+        rounds=20,
+        iterations=5,
+    )
+
+
+@pytest.mark.performance_regression_test
+def test_regression_biweight_none(benchmark, performance_test_data):
+    data, interact = performance_test_data
+    benchmark.pedantic(
+        compute_sparse_isn,
+        args=(data, None, interact, "biweight"),
+        rounds=20,
+        iterations=5,
+    )
+
+
+@pytest.mark.performance_regression_test
+def test_regression_pearson_max(benchmark, performance_test_data):
+    data, interact = performance_test_data
+    benchmark.pedantic(
+        compute_sparse_isn,
+        args=(data, None, interact, "pearson", "max"),
+        rounds=20,
+        iterations=5,
+    )
+
+
+@pytest.mark.performance_regression_test
+def test_regression_pearson_avg(benchmark, performance_test_data):
+    data, interact = performance_test_data
+    benchmark.pedantic(
+        compute_sparse_isn,
+        args=(data, None, interact, "pearson", "avg"),
+        rounds=20,
+        iterations=5,
+    )
+
+
+@pytest.mark.performance_regression_test
+def test_regression_pearson_none(benchmark, performance_test_data):
+    data, interact = performance_test_data
+    benchmark.pedantic(
+        compute_sparse_isn,
+        args=(data, None, interact, "pearson"),
+        rounds=20,
+        iterations=5,
+    )
+
+
+@pytest.mark.performance_regression_test
+def test_regression_spearman_max(benchmark, performance_test_data):
+    data, interact = performance_test_data
+    benchmark.pedantic(
+        compute_sparse_isn,
+        args=(data, None, interact, "spearman", "max"),
+        rounds=20,
+        iterations=5,
+    )
+
+
+@pytest.mark.performance_regression_test
+def test_regression_spearman_avg(benchmark, performance_test_data):
+    data, interact = performance_test_data
+    benchmark.pedantic(
+        compute_sparse_isn,
+        args=(data, None, interact, "spearman", "avg"),
+        rounds=20,
+        iterations=5,
+    )
+
+
+@pytest.mark.performance_regression_test
+def test_regression_spearman_none(benchmark, performance_test_data):
+    data, interact = performance_test_data
+    benchmark.pedantic(
+        compute_sparse_isn,
+        args=(data, None, interact, "spearman"),
+        rounds=20,
+        iterations=5,
+    )
+
+
+@pytest.mark.performance_regression_test
+def test_regression_dot_max(benchmark, performance_test_data):
+    data, interact = performance_test_data
+    benchmark.pedantic(
+        compute_sparse_isn,
+        args=(data, None, interact, "dot", "max"),
+        rounds=20,
+        iterations=5,
+    )
+
+
+@pytest.mark.performance_regression_test
+def test_regression_dot_avg(benchmark, performance_test_data):
+    data, interact = performance_test_data
+    benchmark.pedantic(
+        compute_sparse_isn,
+        args=(data, None, interact, "dot", "avg"),
+        rounds=20,
+        iterations=5,
+    )
+
+
+@pytest.mark.performance_regression_test
+def test_regression_dot_none(benchmark, performance_test_data):
+    data, interact = performance_test_data
+    benchmark.pedantic(
+        compute_sparse_isn,
+        args=(data, None, interact, "dot"),
+        rounds=20,
+        iterations=5,
+    )
+
+
+@pytest.mark.performance_regression_test
+def test_regression_dense(benchmark, performance_test_data):
+    data, _ = performance_test_data
+    benchmark.pedantic(
+        compute_dense_isn,
+        args=(data,),
+        rounds=20,
+        iterations=5,
+    )
 
 
 @pytest.mark.benchmark_cpu_sparse
