@@ -36,8 +36,6 @@ jobs:
             dist/isn_tractor-*.tar.gz
             dist/isn_tractor-*-py3-none-any.whl
 
-      # - name: Publish to PyPI
-      #   run: poetry publish -u ${{ secrets.PYPI_USER }} -p ${{ secrets.PYPI_PASSWORD }}
       - name: Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:

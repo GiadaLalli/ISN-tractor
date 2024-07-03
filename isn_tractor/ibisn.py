@@ -416,15 +416,10 @@ def __make_edge_fn(
         second = t.tensor(intersection_2.values, device=device)
         size = first.shape[0]
 
-        first_prime = first if first.ndim > 1 else first.view(size, 1)
-        print(first_prime)
-
-        res = edge(
+        return edge(
             first if first.ndim > 1 else first.view(size, 1),
             second if second.ndim > 1 else second.view(size, 1),
         )
-        print(res)
-        return res
 
     return make_edge
 
