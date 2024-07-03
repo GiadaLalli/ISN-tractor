@@ -49,7 +49,7 @@ def compute_dense_isn(data, device=None):
 
 
 def compute_dense_isn_offline(data, device=None):
-    for isn in dense_isn_offline(data):
+    for isn in dense_isn_offline(data, device=device):
         del isn
 
 
