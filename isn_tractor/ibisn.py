@@ -232,39 +232,38 @@ def map_interaction(
 def __pearson_metric(pool: PoolingFn) -> MetricFn:
     @lru_cache(10240)
     def metric(first: t.Tensor, second: t.Tensor) -> t.Tensor:
-        if first.dim() == 1 and second.dim() == 1:
-            combined = t.stack([first, second], dim=1)
-            return pool(t.corrcoef(combined.T)[0, 1])
-
         combined = t.cat([first, second], dim=1)
         return pool(t.corrcoef(combined.T)[: first.shape[1], first.shape[1]])
 
     return metric
 
 
+@lru_cache(10240)
+@t.jit.script
+def __pearson_metric_max(first: t.Tensor, second: t.Tensor) -> t.Tensor:
+    combined = t.cat([first, second], dim=1)
+    return t.max(t.corrcoef(combined.T)[: first.shape[1], first.shape[1]])
+
+
+@lru_cache(10240)
+@t.jit.script
+def __pearson_metric_avg(first: t.Tensor, second: t.Tensor) -> t.Tensor:
+    combined = t.cat([first, second], dim=1)
+    return t.mean(t.corrcoef(combined.T)[: first.shape[1], first.shape[1]])
+
+
 def __spearman_metric(pool: PoolingFn) -> MetricFn:
     @lru_cache(10240)
     def metric(first: t.Tensor, second: t.Tensor) -> t.Tensor:
-        if first.ndim == 1 and second.ndim == 1:
-            data = t.stack((first, second), dim=1)
-            for i in range(data.shape[1]):
-                _, inv, counts = t.unique(
-                    data[:, i], return_inverse=True, return_counts=True
-                )
-                csum = t.zeros_like(counts)
-                csum[1:] = counts[:-1].cumsum(dim=-1)
-                data[:, i] = csum[inv]
-            corr = t.corrcoef(data.T)[0, 1]
-        else:
-            data = t.cat((first, second), dim=1)
-            for i in range(data.shape[1]):
-                _, inv, counts = t.unique(
-                    data[:, i], return_inverse=True, return_counts=True
-                )
-                csum = t.zeros_like(counts)
-                csum[1:] = counts[:-1].cumsum(dim=-1)
-                data[:, i] = csum[inv]
-            corr = t.corrcoef(data.T)[: first.shape[1], first.shape[1] :]
+        data = t.cat((first, second), dim=1)
+        for i in range(data.shape[1]):
+            _, inv, counts = t.unique(
+                data[:, i], return_inverse=True, return_counts=True
+            )
+            csum = t.zeros_like(counts)
+            csum[1:] = counts[:-1].cumsum(dim=-1)
+            data[:, i] = csum[inv]
+        corr = t.corrcoef(data.T)[: first.shape[1], first.shape[1] :]
         return pool(corr)
 
     return metric
@@ -378,7 +377,8 @@ def __isn_edge(
             pooled = metric(loo_1, loo_2)
             result.append(rows * (glob - pooled) + pooled)  # type: ignore[call-overload,operator]
 
-        return t.stack(result)
+        edge = t.stack(result)
+        return edge.view(*edge.shape[:2])
 
     # np.array(result, dtype=np.float64)
 
@@ -412,10 +412,19 @@ def __make_edge_fn(
             else data[data.columns.intersection(element_two)]
         )
 
-        return edge(
-            t.tensor(intersection_1.values, device=device),
-            t.tensor(intersection_2.values, device=device),
+        first = t.tensor(intersection_1.values, device=device)
+        second = t.tensor(intersection_2.values, device=device)
+        size = first.shape[0]
+
+        first_prime = first if first.ndim > 1 else first.view(size, 1)
+        print(first_prime)
+
+        res = edge(
+            first if first.ndim > 1 else first.view(size, 1),
+            second if second.ndim > 1 else second.view(size, 1),
         )
+        print(res)
+        return res
 
     return make_edge
 
@@ -450,9 +459,9 @@ def sparse_isn(
     if isinstance(metric, str) and isinstance(pool, str):
         if (
             metric_fn := {
-                ("pearson", "max"): __pearson_metric(t.max),
-                ("pearson", "avg"): __pearson_metric(t.mean),
-                ("pearson", "average"): __pearson_metric(t.mean),
+                ("pearson", "max"): __pearson_metric_max,
+                ("pearson", "avg"): __pearson_metric_avg,
+                ("pearson", "average"): __pearson_metric_avg,
                 ("spearman", "max"): __spearman_metric(t.max),
                 ("spearman", "avg"): __spearman_metric(t.mean),
                 ("spearman", "average"): __spearman_metric(t.mean),
