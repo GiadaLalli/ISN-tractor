@@ -4,9 +4,9 @@ import torch as t
 from numpy import float32
 
 
-def dense_isn_offline(data):
+def dense_isn_offline(data, device=None):
     """Lionessr using offline pearson metric."""
-    xt = t.from_numpy(data.T.to_numpy(dtype=float32, copy=False))
+    xt = t.tensor(data.T.to_numpy(dtype=float32, copy=False), device=device)
     nrsamples = xt.size(1)
 
     net = t.corrcoef(xt)
