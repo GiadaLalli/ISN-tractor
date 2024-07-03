@@ -110,5 +110,8 @@ I did my best effort to make this library available to anyone, but bugs might be
 Should you experience problems in using or installing it, or just to share any comment, please contact giada [dot] lalli [at] kuleuven [dot] be and zuqi [dot] li [at] kuleuven [dot] be.
 
 
+Performance History
+===================
 
+https://giadalalli.github.io/ISN-tractor/dev/bench/index.html
 
