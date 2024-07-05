@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1720084456373,
+  "lastUpdate": 1720171914397,
   "repoUrl": "https://github.com/GiadaLalli/ISN-tractor",
   "entries": {
     "ISN-Tractor Performance Regression Tests": [
@@ -1411,6 +1411,121 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.000477340809376724",
             "extra": "mean: 5.98978702000295 msec\nrounds: 20"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "james.collier@vib.be",
+            "name": "James Collier",
+            "username": "MaybeJustJames"
+          },
+          "committer": {
+            "email": "james.collier@vib.be",
+            "name": "James Collier",
+            "username": "MaybeJustJames"
+          },
+          "distinct": true,
+          "id": "d316b0218591f6bc92d5fb5f8994a9de3d274847",
+          "message": "Fix biweight_midcorrelation implementation\n\nThanks to @FedericoMelograna",
+          "timestamp": "2024-07-05T11:22:43+02:00",
+          "tree_id": "886ec486d8f5c52a0b3d958cd0629d8377f60fe9",
+          "url": "https://github.com/GiadaLalli/ISN-tractor/commit/d316b0218591f6bc92d5fb5f8994a9de3d274847"
+        },
+        "date": 1720171913858,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "test/test_benchmark.py::test_regression_biweight_max",
+            "value": 3.4407509767006488,
+            "unit": "iter/sec",
+            "range": "stddev: 0.005804446953347532",
+            "extra": "mean: 290.63422688000054 msec\nrounds: 20"
+          },
+          {
+            "name": "test/test_benchmark.py::test_regression_biweight_avg",
+            "value": 3.267849410843593,
+            "unit": "iter/sec",
+            "range": "stddev: 0.003999211556271975",
+            "extra": "mean: 306.01165300999924 msec\nrounds: 20"
+          },
+          {
+            "name": "test/test_benchmark.py::test_regression_biweight_none",
+            "value": 2.5796081559491015,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00998816873079212",
+            "extra": "mean: 387.6557754299995 msec\nrounds: 20"
+          },
+          {
+            "name": "test/test_benchmark.py::test_regression_pearson_max",
+            "value": 3.3912478060026094,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0033235270593326154",
+            "extra": "mean: 294.8767112299993 msec\nrounds: 20"
+          },
+          {
+            "name": "test/test_benchmark.py::test_regression_pearson_avg",
+            "value": 3.2205351296828595,
+            "unit": "iter/sec",
+            "range": "stddev: 0.005231922290260578",
+            "extra": "mean: 310.5074031900017 msec\nrounds: 20"
+          },
+          {
+            "name": "test/test_benchmark.py::test_regression_pearson_none",
+            "value": 3.4811596109522642,
+            "unit": "iter/sec",
+            "range": "stddev: 0.012934737123068116",
+            "extra": "mean: 287.2606004199997 msec\nrounds: 20"
+          },
+          {
+            "name": "test/test_benchmark.py::test_regression_spearman_max",
+            "value": 1.7287804514722267,
+            "unit": "iter/sec",
+            "range": "stddev: 0.010283709296214584",
+            "extra": "mean: 578.442450079998 msec\nrounds: 20"
+          },
+          {
+            "name": "test/test_benchmark.py::test_regression_spearman_avg",
+            "value": 1.6677452867679883,
+            "unit": "iter/sec",
+            "range": "stddev: 0.01281798819559359",
+            "extra": "mean: 599.6119479000015 msec\nrounds: 20"
+          },
+          {
+            "name": "test/test_benchmark.py::test_regression_spearman_none",
+            "value": 1.7388592668772995,
+            "unit": "iter/sec",
+            "range": "stddev: 0.014508318900236",
+            "extra": "mean: 575.0896688700016 msec\nrounds: 20"
+          },
+          {
+            "name": "test/test_benchmark.py::test_regression_dot_max",
+            "value": 5.593053534806872,
+            "unit": "iter/sec",
+            "range": "stddev: 0.013451998895985006",
+            "extra": "mean: 178.79321086000118 msec\nrounds: 20"
+          },
+          {
+            "name": "test/test_benchmark.py::test_regression_dot_avg",
+            "value": 4.964988805499399,
+            "unit": "iter/sec",
+            "range": "stddev: 0.011263960320698322",
+            "extra": "mean: 201.4103231999968 msec\nrounds: 20"
+          },
+          {
+            "name": "test/test_benchmark.py::test_regression_dot_none",
+            "value": 5.814054465315108,
+            "unit": "iter/sec",
+            "range": "stddev: 0.011976527723715772",
+            "extra": "mean: 171.99701275000052 msec\nrounds: 20"
+          },
+          {
+            "name": "test/test_benchmark.py::test_regression_dense",
+            "value": 156.8010739442821,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0009263890474040519",
+            "extra": "mean: 6.377507340002921 msec\nrounds: 20"
           }
         ]
       }
