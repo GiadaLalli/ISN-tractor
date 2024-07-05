@@ -295,12 +295,10 @@ def __biweight_midcorrelation(pool: PoolingFn) -> MetricFn:
         u_second = second_centered / (second_mad * 9.0)
         w_second = t.pow(1.0 - t.pow(u_second, 2.0), 2.0) * (t.abs(u_second) < 1.0)
 
-        w_first_x_w_second = w_first * w_second
-
-        numerator = t.sum(w_first_x_w_second * first_centered * second_centered)
+        numerator = t.sum(w_first * w_second * first_centered * second_centered)
         denominator = t.sqrt(
-            t.sum(w_first_x_w_second * t.pow(first_centered, 2))
-            * t.sum(w_first_x_w_second * t.pow(second_centered, 2))
+            t.sum(w_first * t.pow(first_centered, 2))
+            * t.sum(w_second * t.pow(second_centered, 2))
         )
 
         return pool(numerator / denominator)
@@ -321,12 +319,10 @@ def __biweight_midcorrelation_max(first: t.Tensor, second: t.Tensor) -> t.Tensor
     u_second = second_centered / (second_mad * 9.0)
     w_second = t.pow(1.0 - t.pow(u_second, 2.0), 2.0) * (t.abs(u_second) < 1.0)
 
-    w_first_x_w_second = w_first * w_second
-
-    numerator = t.sum(w_first_x_w_second * first_centered * second_centered)
+    numerator = t.sum(w_first * w_second * first_centered * second_centered)
     denominator = t.sqrt(
-        t.sum(w_first_x_w_second * t.pow(first_centered, 2))
-        * t.sum(w_first_x_w_second * t.pow(second_centered, 2))
+        t.sum(w_first * t.pow(first_centered, 2))
+        * t.sum(w_second * t.pow(second_centered, 2))
     )
 
     return t.max(numerator / denominator)
@@ -345,12 +341,10 @@ def __biweight_midcorrelation_avg(first: t.Tensor, second: t.Tensor) -> t.Tensor
     u_second = second_centered / (second_mad * 9.0)
     w_second = t.pow(1.0 - t.pow(u_second, 2.0), 2.0) * (t.abs(u_second) < 1.0)
 
-    w_first_x_w_second = w_first * w_second
-
-    numerator = t.sum(w_first_x_w_second * first_centered * second_centered)
+    numerator = t.sum(w_first * w_second * first_centered * second_centered)
     denominator = t.sqrt(
-        t.sum(w_first_x_w_second * t.pow(first_centered, 2))
-        * t.sum(w_first_x_w_second * t.pow(second_centered, 2))
+        t.sum(w_first * t.pow(first_centered, 2))
+        * t.sum(w_second * t.pow(second_centered, 2))
     )
 
     return t.mean(numerator / denominator)
