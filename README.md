@@ -68,7 +68,8 @@ The ``examples`` and ``visualisation`` folders contain some scripts showing how 
 
 
 ## Roadmap
-- [ ] Paper citation.
+- [ ] Add more metrics.
+- [ ] Implement new ISN computation formula.
 
 
 ## Contributing
@@ -97,7 +98,7 @@ Federico Melograna - federico.melograna@kuleuven.be
 How to cite
 ===========
 
-If you find this library useful, please cite: 
+If you find this library useful, please cite: https://doi.org/10.1038/s41598-024-69067-2
 
 About us
 ========
@@ -110,9 +111,14 @@ Disclaimer
 I did my best effort to make this library available to anyone, but bugs might be present.
 Should you experience problems in using or installing it, or just to share any comment, please contact giada [dot] lalli [at] kuleuven [dot] be and zuqi [dot] li [at] kuleuven [dot] be.
 
+Aknowledgements
+==========
+
+The authors thank designer Lorenzo Casari for the brilliant logo.
 
 Performance History
 ===================
 
 https://giadalalli.github.io/ISN-tractor/dev/bench/index.html
+
 
