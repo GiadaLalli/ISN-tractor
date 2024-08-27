@@ -98,7 +98,20 @@ Federico Melograna - federico.melograna@kuleuven.be
 How to cite
 ===========
 
-If you find this library useful, please cite: https://doi.org/10.1038/s41598-024-69067-2
+If you find this library useful, please cite the paper: https://doi.org/10.1038/s41598-024-69067-2 as:
+
+```latex
+@article{lalli2024python,
+  title={A python library for the fast and scalable computation of biologically meaningful individual specific networks},
+  author={Lalli, Giada and Li, Zuqi and Melograna, Federico and Collier, James and Moreau, Yves and Raimondi, Daniele and Van Steen, Kristel},
+  journal={Scientific Reports},
+  volume={14},
+  number={1},
+  pages={18243},
+  year={2024},
+  publisher={Nature Publishing Group UK London}
+}
+```
 
 About us
 ========
