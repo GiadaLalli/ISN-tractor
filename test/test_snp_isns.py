@@ -2,7 +2,6 @@ import pytest
 from isn_tractor.ibisn import sparse_isn, dense_isn, __spearman_metric
 from benchmark.dense_isn_offline import dense_isn_offline
 
-# from numpy import array, concatenate, corrcoef, float32, nan, arange, repeat, tile
 import numpy as np
 import pandas as pd
 from pandas.testing import assert_frame_equal
@@ -49,7 +48,6 @@ def mk_sparse_isn(data, unmapped, mapped, metric, pool=None) -> pd.DataFrame:
         ),
         columns=[f"{a}_{b}" for (a, b) in mapped.values],
     )
-
 
 def test_empty_inputs():
     snp_data = pd.DataFrame()
@@ -1065,52 +1063,15 @@ def test_dense():
     ]
 
     expected = pd.DataFrame(
-        [
-            (
-                1.0,
-                -3.9023278,
-                -2.543286,
-                -3.9023278,
-                1.0,
-                0.625879,
-                -2.543286,
-                0.625879,
-                1.0,
-            ),
-            (
-                1.0,
-                0.0976758,
-                1.456714,
-                0.0976758,
-                1.0,
-                0.625879,
-                1.456714,
-                0.625879,
-                1.0,
-            ),
-            (
-                1.0,
-                0.09767747,
-                1.456714,
-                0.09767747,
-                1.0,
-                0.625879,
-                1.456714,
-                0.625879,
-                1.0,
-            ),
-        ],
-        columns=out_columns,
+        (isn.numpy() for isn in dense_isn_offline(gene_data.copy())),
+        columns=out_columns
     )
-
-    for x in expected.columns:
-        expected[x] = expected[x].astype(np.float32)
 
     new = pd.DataFrame(
-        [network.numpy().astype(np.float32) for network in dense_isn(gene_data.copy())],
+        (isn.numpy() for isn in dense_isn(gene_data.copy())),
         columns=out_columns,
     )
-    assert_frame_equal(expected, new, rtol=0.00001, atol=0.00001)
+    assert_frame_equal(expected, new)
 
 
 def test_dense_offline():
@@ -1138,14 +1099,13 @@ def test_dense_offline():
     ]
 
     online = pd.DataFrame(
-        [network.numpy().astype(np.float32) for network in dense_isn(gene_data.copy())],
+        (network.numpy() for network in dense_isn(gene_data.copy())),
         columns=out_columns,
     )
 
-    # offline = pd.DataFrame(dense_isn_offline(gene_data.copy()), columns=out_columns)
     offline = pd.DataFrame(
-        [network.numpy() for network in dense_isn_offline(gene_data.copy())],
+        (network.numpy() for network in dense_isn_offline(gene_data.copy())),
         columns=out_columns,
     )
 
-    assert_frame_equal(online, offline, rtol=0.00001, atol=0.00001)
+    assert_frame_equal(online, offline)

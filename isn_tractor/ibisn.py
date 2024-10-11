@@ -510,8 +510,8 @@ def dense_isn(
     """
     Network computation based on the Lioness algorithm
     """
-    num_samples = t.tensor(data.shape[0], dtype=t.float32)
-    orig = t.from_numpy(data.to_numpy(dtype=np.float32, copy=False)).to(device)
+    num_samples = t.tensor(data.shape[0], dtype=t.float64)
+    orig = t.from_numpy(data.to_numpy(dtype=np.float64, copy=False)).to(device)
     orig_transpose = t.transpose(orig, 0, 1)
     dot_prod = t.matmul(orig_transpose, orig)
     mean_vect = t.sum(orig, dim=0)
