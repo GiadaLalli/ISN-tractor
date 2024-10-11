@@ -15,4 +15,3 @@ def dense_isn_offline(data, device=None):
     for i in range(nrsamples):
         ss = t.corrcoef(t.cat((xt[:, :i], xt[:, i + 1 :]), dim=1)).flatten()
         yield nrsamples * (agg - ss) + ss
-

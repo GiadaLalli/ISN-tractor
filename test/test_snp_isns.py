@@ -49,6 +49,7 @@ def mk_sparse_isn(data, unmapped, mapped, metric, pool=None) -> pd.DataFrame:
         columns=[f"{a}_{b}" for (a, b) in mapped.values],
     )
 
+
 def test_empty_inputs():
     snp_data = pd.DataFrame()
     interact_snp = []
@@ -1064,7 +1065,7 @@ def test_dense():
 
     expected = pd.DataFrame(
         (isn.numpy() for isn in dense_isn_offline(gene_data.copy())),
-        columns=out_columns
+        columns=out_columns,
     )
 
     new = pd.DataFrame(
